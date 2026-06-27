@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TraceHound</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <h1>TraceHound</h1>
+          <p>Cost-aware trajectory safety console</p>
+        </div>
+        <div class="run-state">
+          <span class="dot" aria-hidden="true"></span>
+          <span id="status">Ready</span>
+        </div>
+      </header>
+
+      <section class="control-bar" aria-label="Evaluation controls">
+        <label>
+          <span>Case</span>
+          <select id="caseSelect" aria-label="Case"></select>
+        </label>
+        <label>
+          <span>Mode</span>
+          <select id="modeSelect" aria-label="Mode">
+              <option value="layered">layered</option>
+              <option value="compressed">compressed</option>
+              <option value="rules">rules</option>
+          </select>
+        </label>
+        <label>
+          <span>Judge</span>
+          <select id="judgeSelect" aria-label="Judge">
+            <option value="heuristic">heuristic</option>
+            <option value="hybrid">hybrid API</option>
+            <option value="api">API only</option>
+          </select>
+        </label>
+        <button id="runBtn" type="button">Run Evaluation</button>
+      </section>
+
+      <section class="workspace">
+        <div class="panel input-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Trajectory Input</h2>
+              <p>Paste a case JSON or choose one of the built-in scenarios.</p>
+            </div>
+          </div>
+          <textarea id="caseInput" spellcheck="false"></textarea>
+        </div>
+
+        <div class="panel output-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Risk Report</h2>
+              <p id="reasonValue">Run an evaluation to inspect safety evidence and cost.</p>
+            </div>
+          </div>
+
+          <div class="summary-strip">
+            <article class="metric-tile">
+              <span>Label</span>
+              <strong id="labelValue">-</strong>
+            </article>
+            <article class="metric-tile">
+              <span>Decision</span>
+              <strong id="decisionValue">-</strong>
+            </article>
+            <article class="metric-tile">
+              <span>Confidence</span>
+              <strong id="confidenceValue">-</strong>
+            </article>
+          </div>
+
+          <div class="detail-grid">
+            <section class="info-section">
+              <h2>Taxonomy</h2>
+              <dl>
+                <dt>Risk Source</dt>
+                <dd id="riskSource">-</dd>
+                <dt>Failure Mode</dt>
+                <dd id="failureMode">-</dd>
+                <dt>Harm Type</dt>
+                <dd id="harmType">-</dd>
+              </dl>
+            </section>
+            <section class="info-section">
+              <h2>Cost</h2>
+              <dl>
+                <dt>Input Tokens</dt>
+                <dd id="inputTokens">-</dd>
+                <dt>Latency</dt>
+                <dd id="latency">-</dd>
+                <dt>Compression</dt>
+                <dd id="compression">-</dd>
+              </dl>
+            </section>
+          </div>
+
+          <section class="info-section evidence-section">
+            <div class="section-title-row">
+              <h2>Evidence Timeline</h2>
+              <span id="evidenceCount">0 steps</span>
+            </div>
+            <div id="evidenceList" class="timeline"></div>
+          </section>
+
+          <section class="info-section guard-section">
+            <h2>Online Guard Hook</h2>
+            <pre id="guardOutput"></pre>
+          </section>
+        </div>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

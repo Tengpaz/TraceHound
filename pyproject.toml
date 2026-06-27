@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tracehound"
+version = "0.1.0"
+description = "Cost-aware and trainable guardrail baseline for agent trajectory safety."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "pydantic>=2.6",
+  "fastapi>=0.110",
+  "uvicorn>=0.29",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+train = [
+  "accelerate>=0.29",
+  "datasets>=2.18",
+  "peft>=0.10",
+  "trl>=0.8",
+  "transformers>=4.40",
+]
+
+[project.scripts]
+tracehound-generate = "scripts.generate_data:main"
+tracehound-evaluate = "scripts.evaluate:main"
+tracehound-validate-api = "scripts.validate_api:main"
+tracehound-demo = "scripts.serve_demo:main"
+
+[tool.setuptools]
+packages = ["traceguard", "scripts"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
