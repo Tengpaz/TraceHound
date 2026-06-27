@@ -29,6 +29,10 @@ tracehound-generate = "scripts.generate_data:main"
 tracehound-evaluate = "scripts.evaluate:main"
 tracehound-validate-api = "scripts.validate_api:main"
 tracehound-demo = "scripts.serve_demo:main"
+tracehound-quality = "scripts.quality_check:main"
+tracehound-experiments = "scripts.run_experiments:main"
+tracehound-report = "scripts.generate_report:main"
+tracehound-convert = "scripts.convert_dataset:main"
 
 [tool.setuptools]
 packages = ["traceguard", "scripts"]

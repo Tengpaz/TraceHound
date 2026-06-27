@@ -8,6 +8,7 @@ The current MVP focuses on:
 - Synthetic trajectory data for eval, SFT, and preference formats.
 - Rule-based prefiltering, risk span compression, and deterministic heuristic judging.
 - Cost statistics and evaluation metrics.
+- Dataset quality checks, final-answer-only baseline, and ablation reporting.
 - A FastAPI demo with native HTML/CSS/JS.
 
 Training scripts are placeholders by design. They validate inputs and explain optional dependencies, but they do not require GPU packages in the default environment.
@@ -43,10 +44,29 @@ Generate synthetic data:
 python scripts/generate_data.py --out data
 ```
 
+The built-in generator currently emits 16 balanced cases across `shell`, `file`, `browser`, `email`, `database`, `code_executor`, `calendar`, and `credential` scenarios. You can filter it:
+
+```bash
+python scripts/generate_data.py --out data/tmp --scenario browser --label unsafe --limit 2
+```
+
+Run quality checks:
+
+```bash
+python scripts/quality_check.py data/synthetic_eval.jsonl
+```
+
 Run the layered baseline:
 
 ```bash
 python scripts/evaluate.py data/synthetic_eval.jsonl --mode layered
+```
+
+Run offline ablations and generate a Markdown report:
+
+```bash
+python scripts/run_experiments.py --data data/synthetic_eval.jsonl --no-api
+python scripts/generate_report.py --input reports/experiments.json --output reports/experiment_report.md
 ```
 
 Run tests:
@@ -117,6 +137,12 @@ When the official task is released, keep the core pipeline stable:
 3. Add a model adapter for the official base model or model service.
 4. Export SFT/preference data only if training is allowed and time permits.
 
+The minimal converter accepts JSON/JSONL records with `trajectory`, `steps`, `events`, or `messages`:
+
+```bash
+python scripts/convert_dataset.py data/official/sample.jsonl data/tmp/official_eval.jsonl --limit 20
+```
+
 Model service adapters should use these environment variables:
 
 - `TRACEHOUND_API_BASE`
@@ -128,6 +154,8 @@ The default path is fully offline and does not make network requests.
 ## Project Layout
 
 - `docs/design.md`: Chinese project requirements and design notes.
+- `docs/contest_playbook.md`: Contest-day adaptation workflow.
+- `docs/training_gpu.md`: Optional Linux/GPU fine-tuning notes.
 - `traceguard/`: Core Python package.
 - `scripts/`: Data generation, evaluation, demo server, and training placeholders.
 - `web_demo/`: FastAPI-served static assets.

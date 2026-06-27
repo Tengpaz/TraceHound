@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from traceguard.data import built_in_cases
+from traceguard.data import built_in_cases, dataset_summary
 from traceguard.schema import report_from_gold
 
 
@@ -29,8 +29,8 @@ def write_jsonl(path: Path, rows: Iterable[Dict[str, Any]]) -> int:
     return count
 
 
-def eval_rows() -> Iterable[Dict[str, Any]]:
-    for case in built_in_cases():
+def eval_rows(cases: Iterable[Dict[str, Any]]) -> Iterable[Dict[str, Any]]:
+    for case in cases:
         yield {
             "id": case["id"],
             "task": case["task"],
@@ -40,8 +40,8 @@ def eval_rows() -> Iterable[Dict[str, Any]]:
         }
 
 
-def sft_rows() -> Iterable[Dict[str, Any]]:
-    for case in built_in_cases():
+def sft_rows(cases: Iterable[Dict[str, Any]]) -> Iterable[Dict[str, Any]]:
+    for case in cases:
         report = report_from_gold(case["gold"])
         prompt = "Evaluate the following agent trajectory:\n" + json.dumps(
             {
@@ -62,8 +62,8 @@ def sft_rows() -> Iterable[Dict[str, Any]]:
         }
 
 
-def preference_rows() -> Iterable[Dict[str, Any]]:
-    for case in built_in_cases():
+def preference_rows(cases: Iterable[Dict[str, Any]]) -> Iterable[Dict[str, Any]]:
+    for case in cases:
         chosen = report_from_gold(case["gold"]).model_dump_json(exclude={"cost"})
         rejected_label = "safe" if case["gold"]["label"] == "unsafe" else "unsafe"
         rejected = {
@@ -88,19 +88,23 @@ def preference_rows() -> Iterable[Dict[str, Any]]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", default="data", help="Output directory.")
+    parser.add_argument("--scenario", action="append", help="Filter by scenario. May be repeated.")
+    parser.add_argument("--label", action="append", choices=["safe", "unsafe"], help="Filter by gold label. May be repeated.")
+    parser.add_argument("--limit", type=int, help="Limit number of cases.")
     args = parser.parse_args()
 
+    cases = built_in_cases(scenarios=args.scenario, labels=args.label, limit=args.limit)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     counts = {
-        "synthetic_eval.jsonl": write_jsonl(out / "synthetic_eval.jsonl", eval_rows()),
-        "synthetic_sft.jsonl": write_jsonl(out / "synthetic_sft.jsonl", sft_rows()),
-        "synthetic_preference.jsonl": write_jsonl(out / "synthetic_preference.jsonl", preference_rows()),
+        "synthetic_eval.jsonl": write_jsonl(out / "synthetic_eval.jsonl", eval_rows(cases)),
+        "synthetic_sft.jsonl": write_jsonl(out / "synthetic_sft.jsonl", sft_rows(cases)),
+        "synthetic_preference.jsonl": write_jsonl(out / "synthetic_preference.jsonl", preference_rows(cases)),
     }
     examples = Path("examples")
     examples.mkdir(parents=True, exist_ok=True)
-    (examples / "demo_cases.json").write_text(json.dumps(built_in_cases(), ensure_ascii=False, indent=2), encoding="utf-8")
-    print(json.dumps({"output_dir": str(out), "counts": counts}, ensure_ascii=False, indent=2))
+    (examples / "demo_cases.json").write_text(json.dumps(cases, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(json.dumps({"output_dir": str(out), "counts": counts, "summary": dataset_summary(cases)}, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
