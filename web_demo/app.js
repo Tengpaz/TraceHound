@@ -6,6 +6,7 @@ const runBtn = document.querySelector("#runBtn");
 const statusEl = document.querySelector("#status");
 
 let currentCase = null;
+let runtimeInfo = null;
 
 async function fetchJson(url, options) {
   const response = await fetch(url, options);
@@ -39,8 +40,32 @@ function renderCase(rawCase) {
   caseInput.value = JSON.stringify(rawCase, null, 2);
 }
 
+function renderRuntime(info) {
+  runtimeInfo = info;
+  const api = info.api || {};
+  const badge = document.querySelector("#apiStatusBadge");
+  badge.classList.remove("ready", "missing");
+  if (api.configured && api.key_present) {
+    badge.textContent = "API Ready";
+    badge.classList.add("ready");
+  } else if (api.configured) {
+    badge.textContent = "API Missing Key";
+    badge.classList.add("missing");
+  } else {
+    badge.textContent = "API Not Configured";
+    badge.classList.add("missing");
+  }
+  setText("#apiModel", api.model ? `Model: ${api.model}` : "Remote model not configured");
+  setText("#apiEndpoint", api.api_base || "-");
+  setText("#apiKeyState", api.key_present ? "server-side key present" : "missing");
+  setText("#runtimeModel", api.model || "-");
+  setText("#runtimeEndpoint", api.api_base || "-");
+}
+
 function renderResult(result) {
   const report = result.report;
+  const runtime = result.runtime || {};
+  const api = runtime.api || runtimeInfo?.api || {};
   setText("#labelValue", report.label);
   setText("#decisionValue", report.decision);
   setText("#confidenceValue", report.confidence.toFixed(2));
@@ -48,9 +73,16 @@ function renderResult(result) {
   setText("#failureMode", formatLabel(report.failure_mode));
   setText("#harmType", formatLabel(report.harm_type));
   setText("#reasonValue", report.reason);
+  setText("#judgeUsed", runtime.judge || judgeSelect.value);
+  setText("#strategyValue", report.cost.strategy || runtime.strategy || "-");
+  setText("#modelCalls", report.cost.model_calls);
   setText("#inputTokens", report.cost.input_tokens);
   setText("#latency", `${report.cost.latency_ms} ms`);
   setText("#compression", report.cost.compression_ratio);
+  setText("#runtimeModel", api.model || "-");
+  setText("#runtimeEndpoint", api.api_base || "-");
+  setText("#runtimeMode", `${runtime.judge || judgeSelect.value} / ${runtime.mode || modeSelect.value}`);
+  setText("#apiCallBadge", report.cost.model_calls > 0 ? `${report.cost.model_calls} remote call` : "rule early-exit");
 
   const labelValue = document.querySelector("#labelValue");
   labelValue.className = report.label === "unsafe" ? "label-unsafe" : "label-safe";
@@ -76,6 +108,12 @@ function renderResult(result) {
 }
 
 async function loadCases() {
+  try {
+    renderRuntime(await fetchJson("/api/runtime"));
+  } catch (error) {
+    setText("#apiStatusBadge", "Runtime Error");
+    console.error(error);
+  }
   const cases = await fetchJson("/api/cases");
   caseSelect.innerHTML = "";
   for (const item of cases) {
@@ -119,6 +157,8 @@ runBtn.addEventListener("click", async () => {
     setStatus("Done");
   } catch (error) {
     setStatus("Error");
+    setText("#reasonValue", error.message);
+    document.querySelector("#guardOutput").textContent = error.stack || String(error);
     console.error(error);
   } finally {
     runBtn.disabled = false;

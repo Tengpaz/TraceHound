@@ -6,6 +6,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Optional
+from urllib.parse import urlparse
 
 
 @dataclass(frozen=True)
@@ -59,3 +60,25 @@ def api_config_from_env(
         timeout=timeout or int(os.getenv("TRACEHOUND_API_TIMEOUT", "60")),
     )
 
+
+def redact_api_base(api_base: Optional[str]) -> str:
+    if not api_base:
+        return ""
+    parsed = urlparse(api_base)
+    if parsed.scheme and parsed.netloc:
+        return f"{parsed.scheme}://{parsed.netloc}"
+    return api_base.rstrip("/").split("/")[0]
+
+
+def api_runtime_status() -> Dict[str, object]:
+    api_base = os.getenv("TRACEHOUND_API_BASE", "")
+    api_key = os.getenv("TRACEHOUND_API_KEY", "")
+    model = os.getenv("TRACEHOUND_MODEL", "")
+    api_path = os.getenv("TRACEHOUND_API_PATH", "/chat/completions")
+    return {
+        "configured": bool(api_base and model),
+        "api_base": redact_api_base(api_base),
+        "api_path": api_path,
+        "model": model,
+        "key_present": bool(api_key),
+    }

@@ -106,6 +106,7 @@ python scripts/evaluate.py data/synthetic_eval.jsonl --judge api --mode compress
 ```
 
 The Web Demo has a `Judge` selector. `hybrid API` and `API only` read credentials from the server-side `.env`; the API key is not sent to the browser.
+The page also shows the configured remote model, redacted endpoint origin, selected inference strategy, model call count, and latency so judges can see when third-party API inference is actually used.
 
 ## Contest Adaptation
 

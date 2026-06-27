@@ -9,6 +9,7 @@ from typing import Any, Dict
 from urllib.parse import unquote
 
 from traceguard.compressor import compress_trajectory
+from traceguard.config import api_runtime_status
 from traceguard.data import built_in_cases
 from traceguard.demo_app import _simulate_guard
 from traceguard.judge import build_remote_judge
@@ -48,6 +49,18 @@ class DemoRequestHandler(BaseHTTPRequestHandler):
                 ]
             )
             return
+        if self.path == "/api/runtime":
+            self._send_json(
+                {
+                    "api": api_runtime_status(),
+                    "judges": [
+                        {"id": "heuristic", "label": "Heuristic", "remote": False},
+                        {"id": "hybrid", "label": "Hybrid API", "remote": True},
+                        {"id": "api", "label": "API Only", "remote": True},
+                    ],
+                }
+            )
+            return
         if self.path.startswith("/api/cases/"):
             case_id = unquote(self.path.removeprefix("/api/cases/"))
             for case in built_in_cases():
@@ -81,6 +94,13 @@ class DemoRequestHandler(BaseHTTPRequestHandler):
                 "report": dump_model(report),
                 "compressed": dump_model(compressed),
                 "guard": _simulate_guard(case),
+                "runtime": {
+                    "judge": judge_name,
+                    "mode": mode,
+                    "api": api_runtime_status(),
+                    "strategy": report.cost.strategy,
+                    "model_calls": report.cost.model_calls,
+                },
             }
         )
 

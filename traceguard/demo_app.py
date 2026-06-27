@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from traceguard.compressor import compress_trajectory
+from traceguard.config import api_runtime_status
 from traceguard.data import built_in_cases
 from traceguard.guard import TraceGuard
 from traceguard.judge import build_remote_judge
@@ -43,6 +44,17 @@ def create_app():
             for case in built_in_cases()
         ]
 
+    @app.get("/api/runtime")
+    def runtime():
+        return {
+            "api": api_runtime_status(),
+            "judges": [
+                {"id": "heuristic", "label": "Heuristic", "remote": False},
+                {"id": "hybrid", "label": "Hybrid API", "remote": True},
+                {"id": "api", "label": "API Only", "remote": True},
+            ],
+        }
+
     @app.get("/api/cases/{case_id}")
     def get_case(case_id: str):
         for case in built_in_cases():
@@ -72,6 +84,13 @@ def create_app():
             "report": dump_model(report),
             "compressed": dump_model(compressed),
             "guard": _simulate_guard(case),
+            "runtime": {
+                "judge": judge_name,
+                "mode": mode,
+                "api": api_runtime_status(),
+                "strategy": report.cost.strategy,
+                "model_calls": report.cost.model_calls,
+            },
         }
 
     return app

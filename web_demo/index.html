@@ -43,6 +43,20 @@
         <button id="runBtn" type="button">Run Evaluation</button>
       </section>
 
+      <section class="api-banner" aria-label="Remote API status">
+        <div>
+          <span id="apiStatusBadge" class="status-pill">Checking API</span>
+          <strong id="apiModel">Remote model not loaded</strong>
+          <p>Third-party API inference runs server-side through the selected Judge mode; API keys are never sent to the browser.</p>
+        </div>
+        <dl>
+          <dt>Endpoint</dt>
+          <dd id="apiEndpoint">-</dd>
+          <dt>Key</dt>
+          <dd id="apiKeyState">-</dd>
+        </dl>
+      </section>
+
       <section class="workspace">
         <div class="panel input-panel">
           <div class="panel-heading">
@@ -92,6 +106,12 @@
             <section class="info-section">
               <h2>Cost</h2>
               <dl>
+                <dt>Judge</dt>
+                <dd id="judgeUsed">-</dd>
+                <dt>Strategy</dt>
+                <dd id="strategyValue">-</dd>
+                <dt>Model Calls</dt>
+                <dd id="modelCalls">-</dd>
                 <dt>Input Tokens</dt>
                 <dd id="inputTokens">-</dd>
                 <dt>Latency</dt>
@@ -101,6 +121,21 @@
               </dl>
             </section>
           </div>
+
+          <section class="info-section api-result-section">
+            <div class="section-title-row">
+              <h2>Third-party API Inference</h2>
+              <span id="apiCallBadge">Not run</span>
+            </div>
+            <dl>
+              <dt>Runtime Model</dt>
+              <dd id="runtimeModel">-</dd>
+              <dt>Runtime Endpoint</dt>
+              <dd id="runtimeEndpoint">-</dd>
+              <dt>Last Mode</dt>
+              <dd id="runtimeMode">-</dd>
+            </dl>
+          </section>
 
           <section class="info-section evidence-section">
             <div class="section-title-row">
