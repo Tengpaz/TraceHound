@@ -30,6 +30,10 @@ class CostStats(TraceModel):
     early_exit: bool = False
     compression_ratio: float = 1.0
     cost_reduction_ratio: float = 0.0
+    input_cost_usd: float = 0.0
+    output_cost_usd: float = 0.0
+    estimated_cost_usd: float = 0.0
+    pricing_note: str = ""
 
     @field_validator("input_tokens", "output_tokens", "latency_ms", "model_calls")
     @classmethod
@@ -182,4 +186,3 @@ def validate_taxonomy_label(kind: str, value: str) -> None:
     }[kind]
     if value not in allowed:
         raise ValueError(f"invalid {kind}: {value}")
-

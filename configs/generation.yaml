@@ -1,0 +1,13 @@
+# TraceHound synthetic data generation defaults.
+# Keep this dependency-free YAML subset simple: scalar values and inline lists only.
+
+out: data/tmp/generated_from_config
+count: 10000
+limit:
+scenarios: [all]
+labels: [all]
+include_eval: true
+include_sft: true
+include_preference: true
+include_rl: true
+

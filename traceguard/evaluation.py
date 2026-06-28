@@ -98,6 +98,8 @@ def summarize_predictions(golds: Sequence[RiskReport], predictions: Sequence[Ris
         "average_model_calls": sum(p.cost.model_calls for p in predictions) / total if total else 0.0,
         "average_compression_ratio": sum(p.cost.compression_ratio for p in predictions) / total if total else 0.0,
         "average_cost_reduction_ratio": sum(p.cost.cost_reduction_ratio for p in predictions) / total if total else 0.0,
+        "total_estimated_cost_usd": sum(p.cost.estimated_cost_usd for p in predictions),
+        "average_estimated_cost_usd": sum(p.cost.estimated_cost_usd for p in predictions) / total if total else 0.0,
     }
     return {key: round(value, 4) if isinstance(value, float) else value for key, value in metrics.items()}
 

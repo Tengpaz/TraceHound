@@ -75,10 +75,28 @@ def api_runtime_status() -> Dict[str, object]:
     api_key = os.getenv("TRACEHOUND_API_KEY", "")
     model = os.getenv("TRACEHOUND_MODEL", "")
     api_path = os.getenv("TRACEHOUND_API_PATH", "/chat/completions")
+    input_price = os.getenv("TRACEHOUND_INPUT_PRICE_PER_1M", "")
+    output_price = os.getenv("TRACEHOUND_OUTPUT_PRICE_PER_1M", "")
+    input_price_value = _float_or_zero(input_price)
+    output_price_value = _float_or_zero(output_price)
     return {
         "configured": bool(api_base and model),
         "api_base": redact_api_base(api_base),
         "api_path": api_path,
         "model": model,
         "key_present": bool(api_key),
+        "pricing": {
+            "input_per_1m_usd": input_price_value,
+            "output_per_1m_usd": output_price_value,
+            "configured": input_price_value > 0 or output_price_value > 0,
+        },
     }
+
+
+def _float_or_zero(value: str) -> float:
+    if not value:
+        return 0.0
+    try:
+        return float(value)
+    except ValueError:
+        return 0.0

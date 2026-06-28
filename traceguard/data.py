@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import copy
+import json
 from collections import Counter
 from typing import Any, Dict, Iterable, List, Optional, Sequence
 
@@ -21,14 +23,16 @@ def built_in_cases(
     scenarios: Optional[Sequence[str]] = None,
     labels: Optional[Sequence[str]] = None,
     limit: Optional[int] = None,
+    count: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
-    return generate_synthetic_cases(scenarios=scenarios, labels=labels, limit=limit)
+    return generate_synthetic_cases(scenarios=scenarios, labels=labels, limit=limit, count=count)
 
 
 def generate_synthetic_cases(
     scenarios: Optional[Sequence[str]] = None,
     labels: Optional[Sequence[str]] = None,
     limit: Optional[int] = None,
+    count: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
     scenario_filter = set(scenarios or [])
     label_filter = set(labels or [])
@@ -38,6 +42,8 @@ def generate_synthetic_cases(
     if label_filter:
         cases = [case for case in cases if case.get("gold", {}).get("label") in label_filter]
     result = list(cases)
+    if count is not None:
+        result = _scale_cases(result, count)
     return result[:limit] if limit is not None else result
 
 
@@ -47,6 +53,51 @@ def dataset_summary(cases: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
         "labels": dict(Counter(case.get("gold", {}).get("label", "unknown") for case in cases)),
         "scenarios": dict(Counter(case.get("metadata", {}).get("scenario", "unknown") for case in cases)),
     }
+
+
+def _scale_cases(cases: Sequence[Dict[str, Any]], count: int) -> List[Dict[str, Any]]:
+    if count < 0:
+        raise ValueError("count must be non-negative")
+    if not cases:
+        return []
+    if count <= len(cases):
+        return [copy.deepcopy(case) for case in cases[:count]]
+    return [_variant_case(cases[index % len(cases)], index) for index in range(count)]
+
+
+def _variant_case(case: Dict[str, Any], index: int) -> Dict[str, Any]:
+    variant = copy.deepcopy(case)
+    variant["id"] = f"{case['id']}__v{index + 1:06d}"
+    metadata = dict(variant.get("metadata") or {})
+    metadata.update({"generated": True, "variant_index": index + 1, "template_id": case["id"]})
+    variant["metadata"] = metadata
+    replacements = {
+        "example.test": f"example{index % 97}.test",
+        "evil.example": f"evil{index % 53}.example",
+        "audit@example.test": f"audit{index % 97}@example.test",
+        "partner@example.test": f"partner{index % 97}@example.test",
+        "attacker@example.test": f"attacker{index % 97}@example.test",
+        "sk-test-secret": f"sk-test-secret-{index:06d}",
+        "sk-live-secret": f"sk-live-secret-{index:06d}",
+        "token-123": f"token-{index:06d}",
+    }
+    variant["task"] = _replace_text(variant.get("task", ""), replacements)
+    for step in variant.get("trajectory", []):
+        if step.get("content"):
+            step["content"] = _replace_text(step["content"], replacements)
+        if step.get("arguments"):
+            step["arguments"] = json.loads(_replace_text(json.dumps(step["arguments"], ensure_ascii=False), replacements))
+    gold = variant.get("gold") or {}
+    if gold.get("reason"):
+        gold["reason"] = _replace_text(gold["reason"], replacements)
+    return variant
+
+
+def _replace_text(text: str, replacements: Dict[str, str]) -> str:
+    result = text
+    for old, new in replacements.items():
+        result = result.replace(old, new)
+    return result
 
 
 def _case_templates() -> List[Dict[str, Any]]:

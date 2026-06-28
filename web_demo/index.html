@@ -1,157 +1,387 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>TraceHound</title>
-    <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="stylesheet" href="/static/styles.css?v=empty-state-v5" />
   </head>
   <body>
-    <main class="shell">
-      <header class="topbar">
-        <div class="brand">
-          <h1>TraceHound</h1>
-          <p>Cost-aware trajectory safety console</p>
-        </div>
-        <div class="run-state">
-          <span class="dot" aria-hidden="true"></span>
-          <span id="status">Ready</span>
-        </div>
-      </header>
+    <div class="backdrop" aria-hidden="true"></div>
+    <nav class="nav-shell" aria-label="TraceHound navigation">
+      <a class="brand-lockup" href="#home" aria-label="TraceHound Home">
+        <span class="brand-mark">TH</span>
+        <span class="brand-text">TraceHound</span>
+      </a>
+      <div class="nav-tabs" role="tablist" aria-label="Pages">
+        <button class="nav-tab active" type="button" data-page="home" data-i18n="nav.home">主页</button>
+        <button class="nav-tab" type="button" data-page="evaluate" data-i18n="nav.evaluate">Agent轨迹安全评估</button>
+        <button class="nav-tab" type="button" data-page="model" data-i18n="nav.model">Guard Model调配</button>
+      </div>
+      <button id="langToggle" class="ghost-button lang-toggle" type="button">EN</button>
+    </nav>
 
-      <section class="control-bar" aria-label="Evaluation controls">
-        <label>
-          <span>Case</span>
-          <select id="caseSelect" aria-label="Case"></select>
-        </label>
-        <label>
-          <span>Mode</span>
-          <select id="modeSelect" aria-label="Mode">
+    <main class="app-shell">
+      <section id="homePage" class="page active">
+        <div class="hero-grid">
+          <section class="hero-copy">
+            <p class="eyebrow">TRACE / COMPRESS / GUARD</p>
+            <h1>TraceHound</h1>
+            <p class="hero-slogan" data-i18n="home.slogan">让每一次 Agent 行动都留下可审计的安全证据</p>
+            <div class="neon-bars" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+            <p class="hero-meta" data-i18n="home.meta">AgentDoG taxonomy · CPU-first baseline · API validation · local model training hooks</p>
+            <div class="hero-actions">
+              <button class="primary-button" type="button" data-go="evaluate" data-i18n="home.startEval">开始评估</button>
+              <button class="secondary-button" type="button" data-go="model" data-i18n="home.openModel">模型调配</button>
+            </div>
+          </section>
+          <section class="signal-board" aria-label="TraceHound telemetry">
+            <div class="signal-line">
+              <span>unsafe_recall</span>
+              <strong>1.000</strong>
+            </div>
+            <div class="signal-line">
+              <span>taxonomy</span>
+              <strong>8 / 14 / 10</strong>
+            </div>
+            <div class="signal-line">
+              <span>datasets</span>
+              <strong id="homeDatasetCount">16 seed cases</strong>
+            </div>
+            <div class="terminal-strip">
+              <span>$ tracehound guard --mode layered</span>
+              <span>risk_span.compress()</span>
+              <span>decision.block_if_needed()</span>
+            </div>
+          </section>
+        </div>
+
+        <section class="home-panels">
+          <article class="glass-panel">
+            <h2 data-i18n="home.panel1.title">轨迹级诊断</h2>
+            <p data-i18n="home.panel1.body">从用户目标、工具调用、外部 observation、最终回答中抽取风险证据。</p>
+          </article>
+          <article class="glass-panel">
+            <h2 data-i18n="home.panel2.title">低算力优先</h2>
+            <p data-i18n="home.panel2.body">默认离线规则与压缩启发式，可接入第三方 API，不强依赖 GPU。</p>
+          </article>
+          <article class="glass-panel">
+            <h2 data-i18n="home.panel3.title">赛前可调配</h2>
+            <p data-i18n="home.panel3.body">支持大规模数据生成、训练预检、模型运行方式切换和报告输出。</p>
+          </article>
+        </section>
+      </section>
+
+      <section id="evaluatePage" class="page">
+        <header class="page-heading">
+          <div>
+            <p class="eyebrow">AGENT TRACE SAFETY</p>
+            <h1 data-i18n="eval.title">Agent轨迹安全评估</h1>
+          </div>
+          <div class="run-state">
+            <span class="dot" aria-hidden="true"></span>
+            <span id="status" data-i18n="common.ready">就绪</span>
+          </div>
+        </header>
+
+        <section class="control-bar" aria-label="Evaluation controls">
+          <label>
+            <span data-i18n="eval.case">案例</span>
+            <select id="caseSelect" aria-label="Case"></select>
+          </label>
+          <label>
+            <span data-i18n="eval.mode">模式</span>
+            <select id="modeSelect" aria-label="Mode">
               <option value="layered">layered</option>
               <option value="compressed">compressed</option>
               <option value="rules">rules</option>
-          </select>
-        </label>
-        <label>
-          <span>Judge</span>
-          <select id="judgeSelect" aria-label="Judge">
-            <option value="heuristic">heuristic</option>
-            <option value="hybrid">hybrid API</option>
-            <option value="api">API only</option>
-          </select>
-        </label>
-        <button id="runBtn" type="button">Run Evaluation</button>
-      </section>
+            </select>
+          </label>
+          <label>
+            <span data-i18n="eval.judge">Judge</span>
+            <select id="judgeSelect" aria-label="Judge">
+              <option value="heuristic">heuristic</option>
+              <option value="hybrid">hybrid API</option>
+              <option value="api">API only</option>
+            </select>
+          </label>
+          <button id="runBtn" class="primary-button" type="button" data-i18n="eval.run">运行评估</button>
+        </section>
 
-      <section class="api-banner" aria-label="Remote API status">
-        <div>
-          <span id="apiStatusBadge" class="status-pill">Checking API</span>
-          <strong id="apiModel">Remote model not loaded</strong>
-          <p>Third-party API inference runs server-side through the selected Judge mode; API keys are never sent to the browser.</p>
-        </div>
-        <dl>
-          <dt>Endpoint</dt>
-          <dd id="apiEndpoint">-</dd>
-          <dt>Key</dt>
-          <dd id="apiKeyState">-</dd>
-        </dl>
-      </section>
-
-      <section class="workspace">
-        <div class="panel input-panel">
-          <div class="panel-heading">
+        <section class="upload-strip" aria-label="Batch upload and reports">
+          <div id="dropZone" class="drop-zone" tabindex="0" role="button">
+            <input id="jsonUpload" type="file" accept=".json,.jsonl,application/json,application/x-ndjson" multiple hidden />
+            <strong data-i18n="eval.uploadTitle">上传 JSON / JSONL</strong>
+            <span data-i18n="eval.uploadHint">点击选择文件，或拖拽轨迹文件到这里</span>
+          </div>
+          <div class="batch-console">
             <div>
-              <h2>Trajectory Input</h2>
-              <p>Paste a case JSON or choose one of the built-in scenarios.</p>
+              <strong id="uploadSummary" data-i18n="batch.noUpload">暂无上传批次</strong>
+              <p id="batchMetrics" data-i18n="batch.placeholder">批量指标和报告下载链接会显示在这里。</p>
+            </div>
+            <div class="batch-actions">
+              <button id="batchRunBtn" class="secondary-button" type="button" data-i18n="eval.batchRun">批量评估</button>
+              <a id="downloadJson" class="download-link disabled" href="#" aria-disabled="true">JSON</a>
+              <a id="downloadMd" class="download-link disabled" href="#" aria-disabled="true">Markdown</a>
+              <a id="downloadChart" class="download-link disabled" href="#" aria-disabled="true">SVG</a>
             </div>
           </div>
-          <textarea id="caseInput" spellcheck="false"></textarea>
-        </div>
+        </section>
 
-        <div class="panel output-panel">
-          <div class="panel-heading">
-            <div>
-              <h2>Risk Report</h2>
-              <p id="reasonValue">Run an evaluation to inspect safety evidence and cost.</p>
+        <section class="api-banner" aria-label="Remote API status">
+          <div>
+            <span id="apiStatusBadge" class="status-pill" data-i18n="common.checkingApi">检查 API</span>
+            <strong id="apiModel">Remote model not loaded</strong>
+            <p data-i18n="eval.apiNote">第三方 API 推理只在服务端执行，API key 不会发送到浏览器。</p>
+          </div>
+          <dl>
+            <dt data-i18n="eval.endpoint">端点</dt>
+            <dd id="apiEndpoint">-</dd>
+            <dt data-i18n="eval.key">密钥</dt>
+            <dd id="apiKeyState">-</dd>
+            <dt data-i18n="eval.pricing">计费</dt>
+            <dd id="apiPricing">-</dd>
+          </dl>
+        </section>
+
+        <section class="workspace">
+          <div class="panel input-panel">
+            <div class="panel-heading">
+              <div>
+                <h2 data-i18n="eval.input">Trajectory Input</h2>
+                <p id="caseMeta">JSON</p>
+              </div>
             </div>
+            <textarea id="caseInput" spellcheck="false"></textarea>
           </div>
 
-          <div class="summary-strip">
-            <article class="metric-tile">
-              <span>Label</span>
-              <strong id="labelValue">-</strong>
-            </article>
-            <article class="metric-tile">
-              <span>Decision</span>
-              <strong id="decisionValue">-</strong>
-            </article>
-            <article class="metric-tile">
-              <span>Confidence</span>
-              <strong id="confidenceValue">-</strong>
-            </article>
-          </div>
+          <div class="panel output-panel">
+            <div class="panel-heading">
+              <div>
+                <h2 data-i18n="eval.report">Risk Report</h2>
+                <p id="reasonValue" data-i18n="eval.reportHint">运行评估后查看安全证据和成本。</p>
+              </div>
+            </div>
 
-          <div class="detail-grid">
-            <section class="info-section">
-              <h2>Taxonomy</h2>
+            <div class="summary-strip">
+              <article class="metric-tile">
+                <span data-i18n="eval.label">标签</span>
+                <strong id="labelValue">-</strong>
+              </article>
+              <article class="metric-tile">
+                <span data-i18n="eval.decision">决策</span>
+                <strong id="decisionValue">-</strong>
+              </article>
+              <article class="metric-tile">
+                <span data-i18n="eval.confidence">置信度</span>
+                <strong id="confidenceValue">-</strong>
+              </article>
+            </div>
+
+            <div class="detail-grid">
+              <section class="info-section">
+                <h2 data-i18n="eval.taxonomy">风险分类</h2>
+                <dl>
+                  <dt data-i18n="eval.riskSource">风险来源</dt>
+                  <dd id="riskSource">-</dd>
+                  <dt data-i18n="eval.failureMode">失败模式</dt>
+                  <dd id="failureMode">-</dd>
+                  <dt data-i18n="eval.harmType">危害类型</dt>
+                  <dd id="harmType">-</dd>
+                </dl>
+              </section>
+              <section class="info-section">
+                <h2 data-i18n="eval.cost">成本</h2>
+                <dl>
+                  <dt data-i18n="eval.judge">Judge</dt>
+                  <dd id="judgeUsed">-</dd>
+                  <dt data-i18n="eval.strategy">策略</dt>
+                  <dd id="strategyValue">-</dd>
+                  <dt data-i18n="eval.modelCalls">模型调用</dt>
+                  <dd id="modelCalls">-</dd>
+                  <dt data-i18n="eval.inputTokens">输入 Token</dt>
+                  <dd id="inputTokens">-</dd>
+                  <dt data-i18n="eval.latency">延迟</dt>
+                  <dd id="latency">-</dd>
+                  <dt data-i18n="eval.compression">压缩率</dt>
+                  <dd id="compression">-</dd>
+                  <dt data-i18n="eval.estimatedCost">估算费用</dt>
+                  <dd id="estimatedCost">-</dd>
+                </dl>
+              </section>
+            </div>
+
+            <section class="info-section api-result-section">
+              <div class="section-title-row">
+                <h2 data-i18n="eval.apiInference">Third-party API Inference</h2>
+                <span id="apiCallBadge" data-i18n="eval.notRun">未运行</span>
+              </div>
               <dl>
-                <dt>Risk Source</dt>
-                <dd id="riskSource">-</dd>
-                <dt>Failure Mode</dt>
-                <dd id="failureMode">-</dd>
-                <dt>Harm Type</dt>
-                <dd id="harmType">-</dd>
+                <dt data-i18n="eval.runtimeModel">运行模型</dt>
+                <dd id="runtimeModel">-</dd>
+                <dt data-i18n="eval.runtimeEndpoint">运行端点</dt>
+                <dd id="runtimeEndpoint">-</dd>
+                <dt data-i18n="eval.lastMode">上次模式</dt>
+                <dd id="runtimeMode">-</dd>
               </dl>
             </section>
-            <section class="info-section">
-              <h2>Cost</h2>
-              <dl>
-                <dt>Judge</dt>
-                <dd id="judgeUsed">-</dd>
-                <dt>Strategy</dt>
-                <dd id="strategyValue">-</dd>
-                <dt>Model Calls</dt>
-                <dd id="modelCalls">-</dd>
-                <dt>Input Tokens</dt>
-                <dd id="inputTokens">-</dd>
-                <dt>Latency</dt>
-                <dd id="latency">-</dd>
-                <dt>Compression</dt>
-                <dd id="compression">-</dd>
-              </dl>
+
+            <section class="info-section evidence-section">
+              <div class="section-title-row">
+                <h2 data-i18n="eval.evidenceTimeline">证据时间线</h2>
+                <span id="evidenceCount">0 步</span>
+              </div>
+              <div id="evidenceList" class="timeline"></div>
+            </section>
+
+            <section class="info-section guard-section">
+              <h2 data-i18n="eval.guardHook">在线 Guard Hook</h2>
+              <pre id="guardOutput"></pre>
             </section>
           </div>
+        </section>
+      </section>
 
-          <section class="info-section api-result-section">
-            <div class="section-title-row">
-              <h2>Third-party API Inference</h2>
-              <span id="apiCallBadge">Not run</span>
+      <section id="modelPage" class="page">
+        <header class="page-heading">
+          <div>
+            <p class="eyebrow">GUARD MODEL OPS</p>
+            <h1 data-i18n="model.title">Guard Model调配</h1>
+          </div>
+          <span id="modelStatusPill" class="status-pill" data-i18n="common.loading">加载中</span>
+        </header>
+
+        <section class="model-layout">
+          <section class="panel model-status-panel">
+            <div class="panel-heading">
+              <div>
+                <h2 data-i18n="model.current">当前使用模型</h2>
+                <p id="modelServingType">-</p>
+              </div>
             </div>
-            <dl>
-              <dt>Runtime Model</dt>
-              <dd id="runtimeModel">-</dd>
-              <dt>Runtime Endpoint</dt>
-              <dd id="runtimeEndpoint">-</dd>
-              <dt>Last Mode</dt>
-              <dd id="runtimeMode">-</dd>
+            <div class="model-name" id="currentModelName">-</div>
+            <div class="mode-grid">
+              <label>
+                <span data-i18n="model.mode">使用方式</span>
+                <select id="deploymentModeSelect">
+                  <option value="api" data-i18n="model.apiMode">模型 API</option>
+                  <option value="local" data-i18n="model.localMode">本地部署运行</option>
+                </select>
+              </label>
+              <label>
+                <span id="modelNameFieldLabel" data-i18n="model.localName">本地模型名</span>
+                <input id="localModelInput" type="text" value="tracehound-local-heuristic" />
+              </label>
+              <button id="applyModelBtn" class="primary-button" type="button" data-i18n="model.apply">应用配置</button>
+            </div>
+            <dl class="dense-dl">
+              <dt data-i18n="model.apiModel">API 模型</dt>
+              <dd id="modelApiName">-</dd>
+              <dt data-i18n="model.localGpu">本地 GPU</dt>
+              <dd id="localGpuState">-</dd>
+              <dt data-i18n="model.trainer">训练依赖</dt>
+              <dd id="trainerState">-</dd>
             </dl>
           </section>
 
-          <section class="info-section evidence-section">
-            <div class="section-title-row">
-              <h2>Evidence Timeline</h2>
-              <span id="evidenceCount">0 steps</span>
+          <section class="panel data-gen-panel">
+            <div class="panel-heading">
+              <div>
+                <h2 data-i18n="model.dataGen">数据生成设定</h2>
+                <p id="dataGenHint" data-i18n="model.dataGenHint">支持 10K 级合成轨迹导出</p>
+              </div>
             </div>
-            <div id="evidenceList" class="timeline"></div>
+            <div class="config-row">
+              <label>
+                <span data-i18n="model.config">配置文件</span>
+                <input id="genConfigPath" type="text" value="configs/generation.yaml" />
+              </label>
+              <button id="loadGenConfigBtn" class="secondary-button" type="button" data-i18n="model.loadConfig">加载配置</button>
+            </div>
+            <div class="form-grid">
+              <label>
+                <span data-i18n="model.scale">生成规模</span>
+                <input id="genCount" type="number" min="1" max="50000" step="1000" value="10000" />
+              </label>
+              <label>
+                <span data-i18n="model.scenario">场景</span>
+                <select id="genScenario">
+                  <option value="all" data-i18n="common.all">全部</option>
+                </select>
+              </label>
+              <label>
+                <span data-i18n="model.label">标签</span>
+                <select id="genLabel">
+                  <option value="all" data-i18n="common.all">全部</option>
+                  <option value="safe" data-i18n="common.safe">安全</option>
+                  <option value="unsafe" data-i18n="common.unsafe">不安全</option>
+                </select>
+              </label>
+            </div>
+            <div class="check-row">
+              <label><input id="includeEval" type="checkbox" checked /> <span data-i18n="model.evalSet">评测集</span></label>
+              <label id="sftDatasetOption" class="is-hidden"><input id="includeSft" type="checkbox" /> <span data-i18n="model.sftDataset">SFT 数据集</span></label>
+              <label id="rlDatasetOption" class="is-hidden"><input id="includeRl" type="checkbox" /> <span data-i18n="model.rlDataset">RL / DPO / GRPO 数据集</span></label>
+            </div>
+            <button id="generateDataBtn" class="primary-button wide-button" type="button" data-i18n="model.generate">运行数据生成</button>
           </section>
 
-          <section class="info-section guard-section">
-            <h2>Online Guard Hook</h2>
-            <pre id="guardOutput"></pre>
+          <section id="generationJobPanel" class="panel job-panel is-hidden">
+            <div class="panel-heading">
+              <div>
+                <h2 data-i18n="model.generationStatus">生成状态</h2>
+                <p id="jobStep" data-i18n="common.idle">空闲</p>
+              </div>
+            </div>
+            <div id="jobProgressTrack" class="progress-track is-hidden"><span id="jobProgressBar"></span></div>
+            <div id="jobMessages" class="job-log is-hidden"></div>
+            <dl id="artifactList" class="dense-dl artifact-dl is-hidden">
+              <dt data-i18n="model.output">输出目录</dt>
+              <dd id="artifactOutput">-</dd>
+              <dt data-i18n="model.evalArtifact">评测集</dt>
+              <dd id="artifactEval">-</dd>
+              <dt>SFT</dt>
+              <dd id="artifactSft">-</dd>
+              <dt>RL</dt>
+              <dd id="artifactRl">-</dd>
+            </dl>
           </section>
-        </div>
+
+          <section id="trainingPanel" class="panel training-panel is-hidden">
+            <div class="panel-heading">
+              <div>
+                <h2 data-i18n="model.training">本地微调训练</h2>
+                <p id="trainingModeHint" data-i18n="model.localOnly">仅本地部署模式可用</p>
+              </div>
+            </div>
+            <div class="form-grid train-grid">
+              <label>
+                <span data-i18n="model.rlAlgorithm">RL 算法</span>
+                <select id="rlAlgorithm">
+                  <option value="dpo">DPO</option>
+                  <option value="grpo">GRPO</option>
+                  <option value="orpo">ORPO</option>
+                </select>
+              </label>
+              <label>
+                <span data-i18n="model.dataDir">数据目录</span>
+                <input id="trainDataDir" type="text" value="data/tmp/generated/latest" />
+              </label>
+              <label class="inline-check"><input id="autoSwitchModel" type="checkbox" checked /> <span data-i18n="model.autoSwitch">完成后自动切换</span></label>
+            </div>
+            <div class="button-row">
+              <button id="runSftBtn" class="secondary-button" type="button" data-i18n="model.runSft">运行 SFT</button>
+              <button id="runSftRlBtn" class="primary-button" type="button" data-i18n="model.runSftRl">运行 SFT + RL</button>
+            </div>
+            <div id="trainProgressTrack" class="progress-track is-hidden"><span id="trainProgressBar"></span></div>
+            <div id="trainingMessages" class="job-log is-hidden"></div>
+            <div id="fineTunedModels" class="model-list is-hidden"></div>
+          </section>
+        </section>
       </section>
     </main>
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=empty-state-v5"></script>
   </body>
 </html>

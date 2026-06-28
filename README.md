@@ -9,7 +9,9 @@ The current MVP focuses on:
 - Rule-based prefiltering, risk span compression, and deterministic heuristic judging.
 - Cost statistics and evaluation metrics.
 - Dataset quality checks, final-answer-only baseline, and ablation reporting.
-- A FastAPI demo with native HTML/CSS/JS.
+- Config-driven 10K-scale synthetic data generation for contest-day retuning.
+- API judge token-cost estimates via optional per-1M token pricing env vars.
+- A FastAPI demo with native HTML/CSS/JS, JSON/JSONL upload, batch evaluation, report downloads, and Guard Model ops.
 
 Training scripts are placeholders by design. They validate inputs and explain optional dependencies, but they do not require GPU packages in the default environment.
 
@@ -50,6 +52,14 @@ The built-in generator currently emits 16 balanced cases across `shell`, `file`,
 python scripts/generate_data.py --out data/tmp --scenario browser --label unsafe --limit 2
 ```
 
+For contest-day retuning, edit `configs/generation.yaml` and run:
+
+```bash
+python scripts/generate_data.py --config configs/generation.yaml
+```
+
+The config supports output path, scale, scenario/label filters, and whether to export eval, SFT, preference, and RL-style datasets.
+
 Run quality checks:
 
 ```bash
@@ -62,7 +72,7 @@ Run the layered baseline:
 python scripts/evaluate.py data/synthetic_eval.jsonl --mode layered
 ```
 
-Run offline ablations and generate a Markdown report:
+Run offline ablations and generate Markdown plus SVG chart reports:
 
 ```bash
 python scripts/run_experiments.py --data data/synthetic_eval.jsonl --no-api
@@ -107,6 +117,13 @@ For most OpenAI-compatible services, keep:
 TRACEHOUND_API_PATH=/chat/completions
 ```
 
+Optional cost estimates use per-1M token prices:
+
+```bash
+TRACEHOUND_INPUT_PRICE_PER_1M=2.00
+TRACEHOUND_OUTPUT_PRICE_PER_1M=8.00
+```
+
 Run a small smoke validation first:
 
 ```bash
@@ -126,7 +143,22 @@ python scripts/evaluate.py data/synthetic_eval.jsonl --judge api --mode compress
 ```
 
 The Web Demo has a `Judge` selector. `hybrid API` and `API only` read credentials from the server-side `.env`; the API key is not sent to the browser.
-The page also shows the configured remote model, redacted endpoint origin, selected inference strategy, model call count, and latency so judges can see when third-party API inference is actually used.
+The page also shows the configured remote model, redacted endpoint origin, selected inference strategy, model call count, latency, and estimated API cost so judges can see when third-party API inference is actually used.
+
+## Web Demo Features
+
+The demo has three pages:
+
+- `主页`: project positioning and telemetry summary.
+- `Agent轨迹安全评估`: single-case evaluation, JSON/JSONL upload or drag-and-drop, batch evaluation, evidence timeline, online guard simulation, and JSON/Markdown/SVG report download.
+- `Guard Model调配`: current serving mode, API/local model state, configurable data generation, live job progress, and local SFT / SFT+RL training preflight hooks.
+
+Batch uploads accept:
+
+- A single internal case object with `trajectory`.
+- A JSON array of case objects.
+- An object with `cases: [...]`.
+- JSONL with one case per line.
 
 ## Contest Adaptation
 
@@ -156,6 +188,7 @@ The default path is fully offline and does not make network requests.
 - `docs/design.md`: Chinese project requirements and design notes.
 - `docs/contest_playbook.md`: Contest-day adaptation workflow.
 - `docs/training_gpu.md`: Optional Linux/GPU fine-tuning notes.
+- `configs/generation.yaml`: Default synthetic generation config for quick retuning.
 - `traceguard/`: Core Python package.
 - `scripts/`: Data generation, evaluation, demo server, and training placeholders.
 - `web_demo/`: FastAPI-served static assets.

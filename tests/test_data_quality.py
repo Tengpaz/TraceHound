@@ -13,6 +13,13 @@ def test_built_in_cases_cover_tool_scenarios_and_labels():
         assert scenario in summary["scenarios"]
 
 
+def test_scaled_generation_uses_unique_variant_ids():
+    cases = built_in_cases(count=100)
+    assert len(cases) == 100
+    assert len({case["id"] for case in cases}) == 100
+    assert cases[-1]["metadata"]["generated"] is True
+
+
 def test_quality_check_accepts_generated_cases(tmp_path):
     path = tmp_path / "eval.jsonl"
     with path.open("w", encoding="utf-8") as handle:
@@ -23,4 +30,3 @@ def test_quality_check_accepts_generated_cases(tmp_path):
     assert result["passed"] is True
     assert result["errors"] == []
     assert result["warnings"] == []
-
