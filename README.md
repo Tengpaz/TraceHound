@@ -40,12 +40,20 @@ Install training dependencies only on a suitable Linux/GPU server or a contest-p
 
 ## Remote GPU Server
 
-For a Linux GPU server, clone the repo and run the packaged bootstrap:
+Docker is not required. For a Linux GPU server, use the no-Docker conda bootstrap:
 
 ```bash
 git clone git@github.com:Tengpaz/TraceHound.git
 cd TraceHound
 cp .env.server.example .env
+bash scripts/bootstrap_remote.sh
+```
+
+If the server does not have conda/mamba/micromamba:
+
+```bash
+bash scripts/install_miniconda_linux.sh
+export PATH="$HOME/miniconda3/bin:$PATH"
 bash scripts/bootstrap_remote.sh
 ```
 
@@ -56,13 +64,16 @@ conda activate tracehound-gpu
 bash scripts/run_remote_demo.sh
 ```
 
-The bootstrap path creates a conda env, optionally installs CUDA PyTorch wheels, installs TraceHound with training extras, runs GPU diagnostics, and runs a smoke test. Docker GPU deployment is also available:
+The bootstrap path creates a conda env, optionally installs CUDA PyTorch wheels, installs TraceHound with training extras, runs GPU diagnostics, and runs a smoke test.
+
+If direct `git clone` is inconvenient, create a clean deploy tarball on your Mac and upload it:
 
 ```bash
-docker compose -f docker-compose.gpu.yml up -d --build
+bash scripts/create_deploy_bundle.sh
+scp dist/tracehound-<sha>.tar.gz <user>@<server-ip>:~/
 ```
 
-See `docs/remote_gpu_deploy.md` for CUDA wheel overrides, SSH tunneling, Docker notes, and training preflight commands.
+Docker GPU deployment remains optional only if the server already has Docker plus NVIDIA Container Toolkit. See `docs/remote_gpu_deploy.md` for CUDA wheel overrides, SSH tunneling, tarball deployment, optional Docker notes, and training preflight commands.
 
 ## Quick Start
 
@@ -217,7 +228,9 @@ The default path is fully offline and does not make network requests.
 - `docs/training_gpu.md`: Optional Linux/GPU fine-tuning notes.
 - `configs/generation.yaml`: Default synthetic generation config for quick retuning.
 - `.env.server.example`: GPU server environment template.
-- `Dockerfile.gpu` / `docker-compose.gpu.yml`: Optional NVIDIA Docker deployment.
+- `scripts/bootstrap_remote.sh`: Primary no-Docker server bootstrap.
+- `scripts/create_deploy_bundle.sh`: Clean tarball packaging for `scp` deployment.
+- `Dockerfile.gpu` / `docker-compose.gpu.yml`: Optional NVIDIA Docker deployment, not required.
 - `Makefile`: Common setup, smoke, demo, and Docker commands.
 - `traceguard/`: Core Python package.
 - `scripts/`: Data generation, evaluation, demo server, and training placeholders.

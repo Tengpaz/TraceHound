@@ -1,8 +1,8 @@
-# Remote GPU Deployment
+# Remote GPU Deployment Without Docker
 
-This guide packages TraceHound for a Linux GPU server while keeping the Mac workstation path lightweight. The default path is conda-based because contest servers often provide a custom CUDA driver, mounted datasets, and restricted Docker permissions.
+TraceHound does not require Docker. The primary deployment path is a plain Linux server plus conda/mamba/micromamba. Docker files are kept only as an optional path for environments that already provide NVIDIA Container Toolkit.
 
-## One-command Conda Path
+## Recommended Server Flow
 
 On the GPU server:
 
@@ -27,7 +27,7 @@ Then run:
 bash scripts/bootstrap_remote.sh
 ```
 
-The bootstrap script creates `tracehound-gpu`, installs CUDA PyTorch wheels unless disabled, installs TraceHound with dev/train extras, runs `scripts/gpu_doctor.py`, and runs the CPU/API smoke path.
+The bootstrap script creates `tracehound-gpu`, installs CUDA PyTorch wheels unless disabled, installs TraceHound with dev/train extras, runs `scripts/gpu_doctor.py`, and runs the smoke path.
 
 Start the demo:
 
@@ -44,30 +44,47 @@ ssh -L 8000:127.0.0.1:8000 <user>@<server-ip>
 
 If tunneling, set `TRACEHOUND_HOST=127.0.0.1` in `.env` before starting the demo.
 
-## Docker GPU Path
+## If Conda Is Not Installed
 
-Use this only when the server has Docker plus NVIDIA Container Toolkit.
+Docker is still not needed. Install user-local Miniconda:
 
 ```bash
-git clone git@github.com:Tengpaz/TraceHound.git
+bash scripts/install_miniconda_linux.sh
+export PATH="$HOME/miniconda3/bin:$PATH"
+bash scripts/bootstrap_remote.sh
+```
+
+Or let the bootstrap script do that automatically:
+
+```bash
+TRACEHOUND_AUTO_INSTALL_MINICONDA=1 bash scripts/bootstrap_remote.sh
+```
+
+This installs into `$HOME/miniconda3` by default. Override with:
+
+```bash
+TRACEHOUND_MINICONDA_DIR=/path/to/miniconda bash scripts/install_miniconda_linux.sh
+```
+
+## If Git Clone Is Inconvenient
+
+On the Mac, build a clean tarball from committed files only:
+
+```bash
+bash scripts/create_deploy_bundle.sh
+scp dist/tracehound-<sha>.tar.gz <user>@<server-ip>:~/
+```
+
+On the server:
+
+```bash
+tar -xzf tracehound-<sha>.tar.gz
 cd TraceHound
 cp .env.server.example .env
-docker compose -f docker-compose.gpu.yml up -d --build
+bash scripts/bootstrap_remote.sh
 ```
 
-Override the base image if the contest server requires a different CUDA line:
-
-```bash
-TRACEHOUND_GPU_BASE_IMAGE=pytorch/pytorch:2.4.1-cuda12.1-cudnn9-runtime \
-docker compose -f docker-compose.gpu.yml up -d --build
-```
-
-Persistent paths are mounted from the repo:
-
-- `data/`
-- `reports/`
-- `checkpoints/`
-- `models/`
+The bundle excludes `.git`, `.env`, runtime reports, caches, model checkpoints, and generated temporary data.
 
 ## Server Validation Commands
 
@@ -98,9 +115,33 @@ python scripts/train_preference.py --data data/synthetic_preference.jsonl --base
 
 After the official model interface is known, add the trainer implementation behind these entrypoints instead of changing the evaluation/demo pipeline.
 
+## Optional Docker Path
+
+Use this only when the server already has Docker plus NVIDIA Container Toolkit. Do not install Docker just for TraceHound.
+
+```bash
+cp .env.server.example .env
+docker compose -f docker-compose.gpu.yml up -d --build
+```
+
+Override the base image if the contest server requires a different CUDA line:
+
+```bash
+TRACEHOUND_GPU_BASE_IMAGE=pytorch/pytorch:2.4.1-cuda12.1-cudnn9-runtime \
+docker compose -f docker-compose.gpu.yml up -d --build
+```
+
+Persistent paths are mounted from the repo:
+
+- `data/`
+- `reports/`
+- `checkpoints/`
+- `models/`
+
 ## Common Fixes
 
 - `CUDA is not visible to torch`: check `nvidia-smi`, the NVIDIA driver, and whether `TRACEHOUND_TORCH_INDEX_URL` matches the server. Set `TRACEHOUND_SKIP_TORCH=1` if the contest image already includes a correct PyTorch build.
+- No conda on server: run `bash scripts/install_miniconda_linux.sh`; Docker is not required.
 - API works locally but not on the server: copy only non-secret template values from `.env.server.example`, then add the server API key directly to `.env`; never commit it.
 - Port is not reachable: use SSH tunneling or open the firewall/security group for `TRACEHOUND_PORT`.
-- Generated reports are missing from git: this is expected. `reports/`, `checkpoints/`, `models/`, and `data/tmp/` are runtime outputs.
+- Generated reports are missing from git: this is expected. `reports/`, `checkpoints/`, `models/`, `dist/`, and `data/tmp/` are runtime outputs.

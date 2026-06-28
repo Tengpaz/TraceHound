@@ -21,6 +21,7 @@ HOST="${TRACEHOUND_HOST:-0.0.0.0}"
 PORT="${TRACEHOUND_PORT:-8000}"
 SKIP_TORCH="${TRACEHOUND_SKIP_TORCH:-0}"
 TORCH_INDEX_URL="${TRACEHOUND_TORCH_INDEX_URL:-https://download.pytorch.org/whl/cu121}"
+AUTO_INSTALL_MINICONDA="${TRACEHOUND_AUTO_INSTALL_MINICONDA:-0}"
 
 find_conda() {
   if [[ -n "${TRACEHOUND_CONDA_EXE:-}" ]]; then
@@ -32,8 +33,29 @@ find_conda() {
 
 CONDA_EXE="$(find_conda)"
 if [[ -z "$CONDA_EXE" ]]; then
-  echo "No conda-compatible executable found. Install Miniconda, Mambaforge, mamba, or micromamba first." >&2
-  exit 1
+  if [[ "$AUTO_INSTALL_MINICONDA" == "1" ]]; then
+    echo "[tracehound] no conda found; installing user-local Miniconda"
+    CONDA_EXE="$(bash scripts/install_miniconda_linux.sh | tail -n 1)"
+  else
+    cat >&2 <<'MSG'
+No conda-compatible executable found.
+
+TraceHound does not require Docker, but the no-Docker deployment path needs conda/mamba/micromamba.
+Install user-local Miniconda with:
+
+  bash scripts/install_miniconda_linux.sh
+
+Then either restart the shell or run:
+
+  export PATH="$HOME/miniconda3/bin:$PATH"
+  bash scripts/bootstrap_remote.sh
+
+For fully automatic install, run:
+
+  TRACEHOUND_AUTO_INSTALL_MINICONDA=1 bash scripts/bootstrap_remote.sh
+MSG
+    exit 1
+  fi
 fi
 
 if "$CONDA_EXE" env list | awk '{print $1}' | grep -qx "$ENV_NAME"; then
