@@ -1,0 +1,28 @@
+ARG BASE_IMAGE=pytorch/pytorch:2.4.1-cuda12.1-cudnn9-runtime
+FROM ${BASE_IMAGE}
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    TOKENIZERS_PARALLELISM=false \
+    TRACEHOUND_HOST=0.0.0.0 \
+    TRACEHOUND_PORT=8000
+
+WORKDIR /workspace/TraceHound
+
+COPY pyproject.toml README.md ./
+COPY .env.example .env.server.example ./
+COPY configs ./configs
+COPY data ./data
+COPY docs ./docs
+COPY examples ./examples
+COPY scripts ./scripts
+COPY tests ./tests
+COPY traceguard ./traceguard
+COPY web_demo ./web_demo
+
+RUN python -m pip install --upgrade pip \
+    && python -m pip install -e ".[dev,train]"
+
+EXPOSE 8000
+
+CMD ["python", "scripts/serve_demo.py", "--host", "0.0.0.0", "--port", "8000"]

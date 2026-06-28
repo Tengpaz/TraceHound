@@ -38,6 +38,32 @@ pip install -e ".[train]"
 
 Install training dependencies only on a suitable Linux/GPU server or a contest-provided environment.
 
+## Remote GPU Server
+
+For a Linux GPU server, clone the repo and run the packaged bootstrap:
+
+```bash
+git clone git@github.com:Tengpaz/TraceHound.git
+cd TraceHound
+cp .env.server.example .env
+bash scripts/bootstrap_remote.sh
+```
+
+Then start the demo:
+
+```bash
+conda activate tracehound-gpu
+bash scripts/run_remote_demo.sh
+```
+
+The bootstrap path creates a conda env, optionally installs CUDA PyTorch wheels, installs TraceHound with training extras, runs GPU diagnostics, and runs a smoke test. Docker GPU deployment is also available:
+
+```bash
+docker compose -f docker-compose.gpu.yml up -d --build
+```
+
+See `docs/remote_gpu_deploy.md` for CUDA wheel overrides, SSH tunneling, Docker notes, and training preflight commands.
+
 ## Quick Start
 
 Generate synthetic data:
@@ -187,8 +213,12 @@ The default path is fully offline and does not make network requests.
 
 - `docs/design.md`: Chinese project requirements and design notes.
 - `docs/contest_playbook.md`: Contest-day adaptation workflow.
+- `docs/remote_gpu_deploy.md`: One-command Linux/GPU deployment notes.
 - `docs/training_gpu.md`: Optional Linux/GPU fine-tuning notes.
 - `configs/generation.yaml`: Default synthetic generation config for quick retuning.
+- `.env.server.example`: GPU server environment template.
+- `Dockerfile.gpu` / `docker-compose.gpu.yml`: Optional NVIDIA Docker deployment.
+- `Makefile`: Common setup, smoke, demo, and Docker commands.
 - `traceguard/`: Core Python package.
 - `scripts/`: Data generation, evaluation, demo server, and training placeholders.
 - `web_demo/`: FastAPI-served static assets.

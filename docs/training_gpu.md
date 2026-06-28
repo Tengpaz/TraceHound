@@ -4,11 +4,18 @@ TraceHound does not train models in the default Mac environment. The local deliv
 
 ## Server Setup
 
-Create or update the same conda environment:
+For one-command remote setup, prefer `docs/remote_gpu_deploy.md`:
 
 ```bash
-conda env create -f environment.yml
-conda activate tracehound
+cp .env.server.example .env
+bash scripts/bootstrap_remote.sh
+```
+
+For a manual setup, create or update the GPU conda environment:
+
+```bash
+conda env create -f environment.gpu.yml
+conda activate tracehound-gpu
 ```
 
 Install the PyTorch build that matches the server CUDA version. Use the command recommended by the PyTorch website or the contest image documentation, then install optional training packages:
@@ -57,4 +64,3 @@ python scripts/train_preference.py --data data/synthetic_preference.jsonl --base
 - Do not download large model weights on the Mac workstation.
 - Do not run full API validation unless quota and contest rules allow it.
 - Keep `TRACEHOUND_API_KEY` in `.env`; never commit keys or generated raw service responses containing secrets.
-

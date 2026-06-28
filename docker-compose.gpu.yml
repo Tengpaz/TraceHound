@@ -1,0 +1,23 @@
+services:
+  tracehound:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+      args:
+        BASE_IMAGE: ${TRACEHOUND_GPU_BASE_IMAGE:-pytorch/pytorch:2.4.1-cuda12.1-cudnn9-runtime}
+    image: tracehound:gpu
+    env_file:
+      - .env
+    environment:
+      TRACEHOUND_HOST: 0.0.0.0
+      TRACEHOUND_PORT: 8000
+    ports:
+      - "${TRACEHOUND_PORT:-8000}:8000"
+    volumes:
+      - ./data:/workspace/TraceHound/data
+      - ./reports:/workspace/TraceHound/reports
+      - ./checkpoints:/workspace/TraceHound/checkpoints
+      - ./models:/workspace/TraceHound/models
+    shm_size: "8gb"
+    gpus: all
+    command: ["python", "scripts/serve_demo.py", "--host", "0.0.0.0", "--port", "8000"]
