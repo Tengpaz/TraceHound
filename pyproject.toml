@@ -17,11 +17,14 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 train = [
-  "accelerate>=0.29",
-  "datasets>=2.18",
-  "peft>=0.10",
-  "trl>=0.8",
-  "transformers>=4.40",
+  "accelerate>=0.33",
+  "datasets>=2.20",
+  "peft>=0.12",
+  "protobuf>=4.25",
+  "sentencepiece>=0.2",
+  "trl>=0.9",
+  "transformers>=4.48",
+  "bitsandbytes>=0.43; platform_system == 'Linux'",
 ]
 
 [project.scripts]
@@ -33,6 +36,7 @@ tracehound-quality = "scripts.quality_check:main"
 tracehound-experiments = "scripts.run_experiments:main"
 tracehound-report = "scripts.generate_report:main"
 tracehound-convert = "scripts.convert_dataset:main"
+tracehound-model-profiles = "scripts.list_model_profiles:main"
 
 [tool.setuptools]
 packages = ["traceguard", "scripts"]

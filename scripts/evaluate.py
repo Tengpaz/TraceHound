@@ -21,7 +21,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("path", help="Path to eval JSONL.")
     parser.add_argument("--mode", default="layered", choices=["rules", "compressed", "layered"])
-    parser.add_argument("--judge", default="heuristic", choices=["heuristic", "api", "hybrid"])
+    parser.add_argument("--judge", default="heuristic", choices=["heuristic", "api", "hybrid", "local"])
     parser.add_argument("--env-file", default=".env", help="Optional env file for API settings.")
     parser.add_argument("--api-base", help="OpenAI-compatible API base URL.")
     parser.add_argument("--api-key", help="API key. Prefer TRACEHOUND_API_KEY or .env for local use.")
@@ -29,6 +29,11 @@ def main() -> None:
     parser.add_argument("--api-path", help="API path. Defaults to /chat/completions.")
     parser.add_argument("--timeout", type=int, help="API timeout in seconds.")
     parser.add_argument("--prompt-mode", default="compressed", choices=["compressed", "full"])
+    parser.add_argument("--model-profile", help="Local model profile name, for example internlm3-8b-instruct.")
+    parser.add_argument("--model-path", help="Local model path or Hugging Face id override for --judge local.")
+    parser.add_argument("--profile-path", help="Optional model profile JSON path.")
+    parser.add_argument("--max-new-tokens", type=int, default=512, help="Local model generation budget.")
+    parser.add_argument("--temperature", type=float, default=0.0, help="Local model sampling temperature.")
     parser.add_argument("--limit", type=int, help="Evaluate only the first N samples.")
     parser.add_argument("--output", help="Optional JSON report path.")
     args = parser.parse_args()
@@ -47,6 +52,19 @@ def main() -> None:
                 prompt_mode=args.prompt_mode,
             )
         except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
+    elif args.judge == "local":
+        try:
+            from traceguard.local_model import build_local_judge
+
+            judge = build_local_judge(
+                model_profile=args.model_profile,
+                model_path=args.model_path,
+                profile_path=args.profile_path,
+                max_new_tokens=args.max_new_tokens,
+                temperature=args.temperature,
+            )
+        except (RuntimeError, ValueError) as exc:
             raise SystemExit(str(exc)) from exc
 
     try:

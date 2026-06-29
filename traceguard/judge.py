@@ -12,7 +12,7 @@ from typing import Any, Dict, Optional
 from traceguard.compressor import compress_trajectory
 from traceguard.config import ApiConfig, api_config_from_env
 from traceguard.json_utils import extract_json_object
-from traceguard.prompts import SYSTEM_PROMPT, build_remote_prompt
+from traceguard.prompts import build_remote_messages
 from traceguard.rules import RuleEngine
 from traceguard.schema import CostStats, RiskReport, TrajectoryCase
 
@@ -94,13 +94,9 @@ class OpenAICompatibleAdapter(ModelAdapter):
 
     def evaluate(self, case: TrajectoryCase, mode: str = "layered") -> RiskReport:
         prompt_mode = "full" if self.prompt_mode == "full" else "compressed"
-        prompt = build_remote_prompt(case, mode=prompt_mode)
         payload = {
             "model": self.config.model,
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt},
-            ],
+            "messages": build_remote_messages(case, mode=prompt_mode),
             "temperature": 0,
         }
         data = json.dumps(payload).encode("utf-8")

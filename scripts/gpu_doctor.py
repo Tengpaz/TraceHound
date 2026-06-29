@@ -11,7 +11,14 @@ import os
 import platform
 import subprocess
 import sys
+from pathlib import Path
 from typing import Any, Dict
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from traceguard.model_profiles import profile_summary, resolve_model_profile
 
 
 TRAIN_PACKAGES = ("torch", "transformers", "datasets", "peft", "trl", "accelerate")
@@ -41,10 +48,20 @@ def build_report() -> Dict[str, Any]:
         "tracehound": {
             "api_configured": bool(os.getenv("TRACEHOUND_API_BASE") and os.getenv("TRACEHOUND_MODEL")),
             "api_key_present": bool(os.getenv("TRACEHOUND_API_KEY")),
+            "model_profile": _model_profile_report(),
             "local_model": os.getenv("TRACEHOUND_LOCAL_MODEL", ""),
             "local_model_path": os.getenv("TRACEHOUND_LOCAL_MODEL_PATH", ""),
         },
     }
+
+
+def _model_profile_report() -> Dict[str, Any]:
+    name = os.getenv("TRACEHOUND_MODEL_PROFILE")
+    try:
+        profile = resolve_model_profile(name)
+        return profile_summary(profile)
+    except Exception as exc:
+        return {"configured": name or "", "error": str(exc)}
 
 
 def _package_version(package: str) -> str | None:

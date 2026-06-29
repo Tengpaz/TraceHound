@@ -19,6 +19,7 @@ TRACEHOUND_HOST=0.0.0.0
 TRACEHOUND_PORT=8000
 TRACEHOUND_TORCH_INDEX_URL=https://download.pytorch.org/whl/cu121
 TRACEHOUND_RUN_SMOKE=1
+TRACEHOUND_MODEL_PROFILE=internlm3-8b-instruct
 ```
 
 Then run:
@@ -90,6 +91,7 @@ The bundle excludes `.git`, `.env`, runtime reports, caches, model checkpoints, 
 
 ```bash
 python scripts/gpu_doctor.py --strict
+python scripts/list_model_profiles.py
 bash scripts/smoke_remote.sh
 python scripts/generate_data.py --config configs/generation.yaml --out data
 python scripts/run_experiments.py --data data/synthetic_eval.jsonl --no-api
@@ -106,14 +108,15 @@ make demo HOST=0.0.0.0 PORT=8000
 
 ## Training Preflight
 
-Current training scripts intentionally validate data and dependencies before launching a real trainer. This keeps contest adaptation flexible.
+Training scripts validate data and dependencies by default, then write plan files. Add `--run` only after the GPU environment and model choice are verified.
 
 ```bash
-python scripts/train_sft.py --data data/synthetic_sft.jsonl --base-model <base-model> --output-dir checkpoints/sft --strict
-python scripts/train_preference.py --data data/synthetic_preference.jsonl --base-model checkpoints/sft --output-dir checkpoints/preference --strict
+python scripts/train_sft.py --data data/synthetic_sft.jsonl --model-profile internlm2_5-1_8b-chat --max-samples 32
+python scripts/train_sft.py --data data/synthetic_sft.jsonl --model-profile internlm3-8b-instruct --output-dir checkpoints/internlm3-sft --run
+python scripts/train_preference.py --data data/synthetic_preference.jsonl --base-model checkpoints/internlm3-sft --model-profile internlm3-8b-instruct --algorithm dpo --run
 ```
 
-After the official model interface is known, add the trainer implementation behind these entrypoints instead of changing the evaluation/demo pipeline.
+Use `internlm2_5-7b-chat` as the formal fallback profile. Use `intern-s2-preview` through the API judge when local GPU validation is not ready.
 
 ## Optional Docker Path
 

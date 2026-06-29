@@ -18,6 +18,7 @@ from traceguard.export import eval_rows, rl_rows, sft_rows, write_jsonl
 from traceguard.generation_config import load_generation_config
 from traceguard.guard import TraceGuard
 from traceguard.judge import build_remote_judge
+from traceguard.model_profiles import list_model_profiles, profile_summary, resolve_model_profile
 from traceguard.pipeline import evaluate_case
 from traceguard.reporting import build_report, write_metric_chart
 from traceguard.schema import RiskReport, TrajectoryCase, TrajectoryStep, dump_model, report_from_gold
@@ -28,7 +29,7 @@ _STATE_LOCK = Lock()
 _JOBS: Dict[str, Dict[str, Any]] = {}
 _MODEL_STATE: Dict[str, Any] = {
     "deployment_mode": "api" if api_runtime_status().get("configured") else "local",
-    "local_model": os.getenv("TRACEHOUND_LOCAL_MODEL", "tracehound-local-heuristic"),
+    "local_model": os.getenv("TRACEHOUND_LOCAL_MODEL", "internlm/internlm3-8b-instruct"),
     "active_finetuned_model": "",
     "fine_tuned_models": [],
 }
@@ -72,6 +73,7 @@ def create_app():
         return {
             "api": api_runtime_status(),
             "model": _model_status(),
+            "model_profiles": _model_profiles_status(),
             "judges": [
                 {"id": "heuristic", "label": "Heuristic", "remote": False},
                 {"id": "hybrid", "label": "Hybrid API", "remote": True},
@@ -404,11 +406,16 @@ def _model_status() -> Dict[str, Any]:
         mode = _MODEL_STATE["deployment_mode"]
         local_model = _MODEL_STATE["active_finetuned_model"] or _MODEL_STATE["local_model"]
         fine_tuned = list(_MODEL_STATE.get("fine_tuned_models", []))
+    try:
+        active_profile = profile_summary(resolve_model_profile())
+    except Exception:
+        active_profile = {}
     current_model = api.get("model") if mode == "api" and api.get("configured") else local_model
     return {
         "deployment_mode": mode,
         "serving_type": "model_api" if mode == "api" else "local_deployment",
-        "current_model": current_model or "tracehound-local-heuristic",
+        "current_model": current_model or "internlm/internlm3-8b-instruct",
+        "active_profile": active_profile,
         "api": api,
         "local": {
             "model": local_model,
@@ -419,6 +426,16 @@ def _model_status() -> Dict[str, Any]:
         "fine_tuned_models": fine_tuned,
         "scenarios": list(TOOL_SCENARIOS),
     }
+
+
+def _model_profiles_status() -> list[Dict[str, Any]]:
+    try:
+        return [
+            profile_summary({"name": name, **profile})
+            for name, profile in sorted(list_model_profiles().items())
+        ]
+    except Exception:
+        return []
 
 
 def _sync_default_model_mode() -> None:

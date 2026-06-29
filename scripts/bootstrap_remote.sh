@@ -91,6 +91,7 @@ echo "[tracehound] installing project: $EXTRAS"
 
 echo "[tracehound] environment diagnostic"
 "${CONDA_RUN[@]}" python scripts/gpu_doctor.py || true
+"${CONDA_RUN[@]}" python scripts/list_model_profiles.py || true
 
 if [[ "$RUN_SMOKE" == "1" ]]; then
   echo "[tracehound] running smoke checks"

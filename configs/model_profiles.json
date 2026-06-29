@@ -1,0 +1,149 @@
+{
+  "default_local_profile": "internlm3-8b-instruct",
+  "default_api_profile": "intern-s2-preview",
+  "profiles": {
+    "internlm3-8b-instruct": {
+      "provider": "huggingface",
+      "family": "internlm",
+      "role": "primary",
+      "hf_model_id": "internlm/internlm3-8b-instruct",
+      "recommended_use": "First-choice local inference and LoRA/SFT candidate when GPU memory permits.",
+      "smoke": false,
+      "formal_lora": true,
+      "trust_remote_code": true,
+      "torch_dtype": "bfloat16",
+      "device_map": "auto",
+      "recommended_max_input_tokens": 8192,
+      "notes": "Keep TraceHound compression and rule early exit enabled even when longer context is available.",
+      "lora": {
+        "r": 16,
+        "alpha": 32,
+        "dropout": 0.05,
+        "target_modules": [
+          "wqkv",
+          "wo",
+          "w1",
+          "w2",
+          "w3",
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      }
+    },
+    "internlm2_5-1_8b-chat": {
+      "provider": "huggingface",
+      "family": "internlm",
+      "role": "smoke",
+      "hf_model_id": "internlm/internlm2_5-1_8b-chat",
+      "recommended_use": "Low-cost GPU smoke test for tokenizer chat_template, local inference, and SFT wiring.",
+      "smoke": true,
+      "formal_lora": false,
+      "trust_remote_code": true,
+      "torch_dtype": "bfloat16",
+      "device_map": "auto",
+      "recommended_max_input_tokens": 4096,
+      "notes": "Use this first on a new GPU server before downloading 7B or 8B checkpoints.",
+      "lora": {
+        "r": 8,
+        "alpha": 16,
+        "dropout": 0.05,
+        "target_modules": [
+          "wqkv",
+          "wo",
+          "w1",
+          "w2",
+          "w3",
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      }
+    },
+    "internlm2_5-7b-chat": {
+      "provider": "huggingface",
+      "family": "internlm",
+      "role": "fallback",
+      "hf_model_id": "internlm/internlm2_5-7b-chat",
+      "recommended_use": "Fallback formal LoRA/SFT candidate if InternLM3-8B is unavailable or too costly.",
+      "smoke": false,
+      "formal_lora": true,
+      "trust_remote_code": true,
+      "torch_dtype": "bfloat16",
+      "device_map": "auto",
+      "recommended_max_input_tokens": 8192,
+      "notes": "Good balance between availability, cost, and contest adaptation speed.",
+      "lora": {
+        "r": 16,
+        "alpha": 32,
+        "dropout": 0.05,
+        "target_modules": [
+          "wqkv",
+          "wo",
+          "w1",
+          "w2",
+          "w3",
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      }
+    },
+    "internlm2_5-20b-chat": {
+      "provider": "huggingface",
+      "family": "internlm",
+      "role": "larger_fallback",
+      "hf_model_id": "internlm/internlm2_5-20b-chat",
+      "recommended_use": "Larger local candidate only when the contest GPU memory budget allows it.",
+      "smoke": false,
+      "formal_lora": true,
+      "trust_remote_code": true,
+      "torch_dtype": "bfloat16",
+      "device_map": "auto",
+      "recommended_max_input_tokens": 8192,
+      "notes": "Prefer QLoRA or multi-GPU placement for practical training.",
+      "lora": {
+        "r": 16,
+        "alpha": 32,
+        "dropout": 0.05,
+        "target_modules": [
+          "wqkv",
+          "wo",
+          "w1",
+          "w2",
+          "w3",
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      }
+    },
+    "intern-s2-preview": {
+      "provider": "openai_compatible",
+      "family": "intern",
+      "role": "api_candidate",
+      "api_base": "https://chat.intern-ai.org.cn/api/v1",
+      "api_path": "/chat/completions",
+      "model": "intern-s2-preview",
+      "recommended_use": "Primary Intern API validation candidate through the OpenAI-compatible adapter.",
+      "recommended_max_input_tokens": 8192,
+      "notes": "Use compressed or layered mode for cost-aware validation instead of sending full trajectories by default."
+    }
+  }
+}

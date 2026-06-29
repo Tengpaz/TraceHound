@@ -16,6 +16,19 @@ if str(ROOT) not in sys.path:
 from traceguard.config import api_config_from_env, load_env_file
 from traceguard.evaluation import evaluate_dataset
 from traceguard.judge import build_remote_judge
+from traceguard.model_profiles import resolve_model_profile
+
+
+def _api_profile_defaults(name: str | None, path: str | None) -> dict:
+    if not name:
+        return {}
+    try:
+        profile = resolve_model_profile(name, path)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
+    if profile.get("provider") != "openai_compatible":
+        raise SystemExit(f"api profile {name} must use provider=openai_compatible")
+    return profile
 
 
 def main() -> None:
@@ -28,6 +41,8 @@ def main() -> None:
     parser.add_argument("--api-key")
     parser.add_argument("--model")
     parser.add_argument("--api-path")
+    parser.add_argument("--api-profile", default="intern-s2-preview", help="OpenAI-compatible profile defaults.")
+    parser.add_argument("--profile-path", help="Optional model profile JSON path.")
     parser.add_argument("--timeout", type=int)
     parser.add_argument("--prompt-mode", default="compressed", choices=["compressed", "full"])
     parser.add_argument("--limit", type=int, help="Start with 1-3 while checking a new API.")
@@ -35,12 +50,13 @@ def main() -> None:
     args = parser.parse_args()
 
     load_env_file(args.env_file)
+    profile = _api_profile_defaults(args.api_profile, args.profile_path)
     try:
         config = api_config_from_env(
-            api_base=args.api_base,
+            api_base=args.api_base or profile.get("api_base"),
             api_key=args.api_key,
-            model=args.model,
-            api_path=args.api_path,
+            model=args.model or profile.get("model"),
+            api_path=args.api_path or profile.get("api_path"),
             timeout=args.timeout,
         )
     except ValueError as exc:
@@ -66,6 +82,7 @@ def main() -> None:
         "judge": args.judge,
         "mode": args.mode,
         "prompt_mode": args.prompt_mode,
+        "api_profile": args.api_profile,
         "limit": args.limit,
         "api_key_present": bool(config.api_key),
     }

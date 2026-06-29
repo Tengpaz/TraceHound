@@ -35,6 +35,12 @@ print("device_count", torch.cuda.device_count())
 PY
 ```
 
+List the prepared Intern profiles:
+
+```bash
+python scripts/list_model_profiles.py
+```
+
 ## Data
 
 Generate synthetic data or convert official data first:
@@ -44,18 +50,36 @@ python scripts/generate_data.py --out data
 python scripts/convert_dataset.py data/official/train.jsonl data/tmp/official_train.jsonl
 ```
 
-The current training entrypoints validate files and print sample statistics. They intentionally do not launch a trainer until the official model, tokenizer, max length, and submission rules are known:
+The training entrypoints validate files, resolve model profiles, and write plan files by default:
 
 ```bash
-python scripts/train_sft.py --data data/synthetic_sft.jsonl --base-model <model-name> --output-dir checkpoints/sft
-python scripts/train_preference.py --data data/synthetic_preference.jsonl --base-model checkpoints/sft --output-dir checkpoints/preference
+python scripts/train_sft.py --data data/synthetic_sft.jsonl --model-profile internlm2_5-1_8b-chat --max-samples 32
+python scripts/train_preference.py --data data/synthetic_preference.jsonl --model-profile internlm3-8b-instruct --algorithm dpo
+```
+
+Add `--run` only on a GPU server to launch the prepared LoRA SFT or DPO/ORPO paths.
+
+```bash
+python scripts/train_sft.py \
+  --data data/synthetic_sft.jsonl \
+  --model-profile internlm3-8b-instruct \
+  --output-dir checkpoints/internlm3-sft \
+  --run
+
+python scripts/train_preference.py \
+  --data data/synthetic_preference.jsonl \
+  --base-model checkpoints/internlm3-sft \
+  --model-profile internlm3-8b-instruct \
+  --algorithm dpo \
+  --output-dir checkpoints/internlm3-dpo \
+  --run
 ```
 
 ## Recommended Extension Points
 
-- SFT: use `transformers`, `datasets`, `peft`, and `accelerate`.
-- Preference optimization: use `trl` for DPO or ORPO if the contest permits pairwise preference training.
-- Model adapter: add a new `ModelAdapter` in `traceguard/judge.py` if the contest provides local model weights rather than an API.
+- SFT: `scripts/train_sft.py` uses `transformers`, `peft`, and tokenizer `chat_template` with a plain-prompt fallback.
+- Preference optimization: `scripts/train_preference.py` prepares DPO/ORPO paths through `trl`; GRPO remains a reward-function hook until the official scoring interface is known.
+- Model adapter: `traceguard/local_model.py` provides a local Hugging Face adapter for InternLM and other chat-template models.
 - Evaluation: always run `scripts/run_experiments.py` before and after training to compare with the CPU baseline.
 
 ## Safety Defaults

@@ -11,6 +11,7 @@ REPORT_MD="${TRACEHOUND_SMOKE_REPORT_MD:-reports/remote_smoke_report.md}"
 
 echo "[tracehound] gpu/server diagnostics"
 python scripts/gpu_doctor.py || true
+python scripts/list_model_profiles.py || true
 
 echo "[tracehound] generating smoke dataset: ${SMOKE_COUNT} samples"
 python scripts/generate_data.py --config configs/generation.yaml --out "$SMOKE_DIR" --count "$SMOKE_COUNT"
