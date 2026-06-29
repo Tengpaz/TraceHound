@@ -18,12 +18,14 @@ dependencies = [
 dev = ["pytest>=8.0"]
 train = [
   "accelerate>=0.33",
-  "datasets>=2.20",
   "peft>=0.12",
   "protobuf>=4.25",
   "sentencepiece>=0.2",
-  "trl>=0.9",
   "transformers>=4.48,<5",
+]
+preference = [
+  "datasets>=2.20",
+  "trl>=0.9",
 ]
 qlora = [
   "bitsandbytes>=0.42; platform_system == 'Linux'",

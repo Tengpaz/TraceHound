@@ -83,7 +83,7 @@ def main() -> None:
         message = (
             "Preference-training dependencies are missing. This is expected on the Mac CPU environment.\n"
             f"Missing packages: {', '.join(missing)}\n"
-            "On Linux/GPU, install CUDA-matched PyTorch first, then run `pip install -e \".[train]\"`."
+            "On Linux/GPU, install CUDA-matched PyTorch first, then run `pip install -e \".[train,preference]\"`."
         )
         if args.strict or args.run:
             raise SystemExit(message)

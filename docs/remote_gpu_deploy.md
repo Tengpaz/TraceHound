@@ -20,7 +20,9 @@ TRACEHOUND_PORT=8000
 TRACEHOUND_TORCH_INDEX_URL=https://download.pytorch.org/whl/cu121
 TRACEHOUND_RUN_SMOKE=1
 TRACEHOUND_MODEL_PROFILE=internlm3-8b-instruct
+TRACEHOUND_INSTALL_PREFERENCE=0
 TRACEHOUND_INSTALL_QLORA=0
+TRACEHOUND_TMPDIR=$HOME/.cache/tracehound/tmp
 ```
 
 Then run:
@@ -145,6 +147,8 @@ Persistent paths are mounted from the repo:
 ## Common Fixes
 
 - `CUDA is not visible to torch`: check `nvidia-smi`, the NVIDIA driver, and whether `TRACEHOUND_TORCH_INDEX_URL` matches the server. Set `TRACEHOUND_SKIP_TORCH=1` if the contest image already includes a correct PyTorch build.
+- `fatal: detected dubious ownership in repository at '/tmp'`: the bootstrap uses `TRACEHOUND_TMPDIR=$HOME/.cache/tracehound/tmp` to keep pip builds out of shared `/tmp`. If running commands manually, export `TMPDIR=$HOME/.cache/tracehound/tmp` first.
+- `Failed to build pyarrow`: keep `TRACEHOUND_INSTALL_PREFERENCE=0` for the default deployment. Install `pip install -e ".[preference]"` later only when DPO/ORPO is needed.
 - `No matching distribution found for bitsandbytes`: keep `TRACEHOUND_INSTALL_QLORA=0` for the default LoRA/SFT path. Install `pip install -e ".[qlora]"` only if QLoRA is required and the server mirror has a compatible wheel.
 - No conda on server: run `bash scripts/install_miniconda_linux.sh`; Docker is not required.
 - API works locally but not on the server: copy only non-secret template values from `.env.server.example`, then add the server API key directly to `.env`; never commit it.

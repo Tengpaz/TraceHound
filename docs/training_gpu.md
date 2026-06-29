@@ -24,6 +24,12 @@ Install the PyTorch build that matches the server CUDA version. Use the command 
 pip install -e ".[train]"
 ```
 
+Preference training uses `datasets` and `trl`, which pull `pyarrow`. Keep this separate from the default deployment path:
+
+```bash
+pip install -e ".[preference]"
+```
+
 `bitsandbytes` is intentionally outside the default `train` extra because some Linux mirrors only expose older wheels. Install it only when QLoRA is needed:
 
 ```bash

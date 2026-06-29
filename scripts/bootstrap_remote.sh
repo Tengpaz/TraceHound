@@ -15,6 +15,7 @@ fi
 ENV_NAME="${TRACEHOUND_ENV_NAME:-tracehound-gpu}"
 PYTHON_VERSION="${TRACEHOUND_PYTHON_VERSION:-3.10}"
 INSTALL_TRAIN="${TRACEHOUND_INSTALL_TRAIN:-1}"
+INSTALL_PREFERENCE="${TRACEHOUND_INSTALL_PREFERENCE:-0}"
 INSTALL_QLORA="${TRACEHOUND_INSTALL_QLORA:-0}"
 RUN_SMOKE="${TRACEHOUND_RUN_SMOKE:-1}"
 START_DEMO="${TRACEHOUND_START_DEMO:-0}"
@@ -23,6 +24,11 @@ PORT="${TRACEHOUND_PORT:-8000}"
 SKIP_TORCH="${TRACEHOUND_SKIP_TORCH:-0}"
 TORCH_INDEX_URL="${TRACEHOUND_TORCH_INDEX_URL:-https://download.pytorch.org/whl/cu121}"
 AUTO_INSTALL_MINICONDA="${TRACEHOUND_AUTO_INSTALL_MINICONDA:-0}"
+TRACEHOUND_TMPDIR="${TRACEHOUND_TMPDIR:-$HOME/.cache/tracehound/tmp}"
+mkdir -p "$TRACEHOUND_TMPDIR"
+export TMPDIR="$TRACEHOUND_TMPDIR"
+export TEMP="$TRACEHOUND_TMPDIR"
+export TMP="$TRACEHOUND_TMPDIR"
 
 find_conda() {
   if [[ -n "${TRACEHOUND_CONDA_EXE:-}" ]]; then
@@ -89,6 +95,11 @@ fi
 
 echo "[tracehound] installing project: $EXTRAS"
 "${CONDA_RUN[@]}" python -m pip install -e "$EXTRAS"
+
+if [[ "$INSTALL_PREFERENCE" == "1" ]]; then
+  echo "[tracehound] installing optional preference-training dependencies"
+  "${CONDA_RUN[@]}" python -m pip install -e ".[preference]"
+fi
 
 if [[ "$INSTALL_QLORA" == "1" ]]; then
   echo "[tracehound] installing optional QLoRA dependencies"

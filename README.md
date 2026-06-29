@@ -38,6 +38,12 @@ pip install -e ".[train]"
 ```
 
 Install training dependencies only on a suitable Linux/GPU server or a contest-provided environment.
+Preference-training dependencies are separate because they pull `datasets/pyarrow`, which can be fragile on restricted mirrors:
+
+```bash
+pip install -e ".[preference]"
+```
+
 `bitsandbytes` is not installed by default because many contest mirrors lag behind current wheels. Enable it only for QLoRA experiments:
 
 ```bash
@@ -77,7 +83,7 @@ bash scripts/run_remote_demo.sh
 ```
 
 The bootstrap path creates a conda env, optionally installs CUDA PyTorch wheels, installs TraceHound with training extras, runs GPU diagnostics, and runs a smoke test.
-It does not install `bitsandbytes` unless `TRACEHOUND_INSTALL_QLORA=1` is set.
+It does not install `datasets/trl/pyarrow` unless `TRACEHOUND_INSTALL_PREFERENCE=1` is set, and it does not install `bitsandbytes` unless `TRACEHOUND_INSTALL_QLORA=1` is set.
 
 The server template defaults to the Intern route:
 

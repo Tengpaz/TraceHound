@@ -21,7 +21,8 @@ if str(ROOT) not in sys.path:
 from traceguard.model_profiles import profile_summary, resolve_model_profile
 
 
-TRAIN_PACKAGES = ("torch", "transformers", "datasets", "peft", "trl", "accelerate")
+TRAIN_PACKAGES = ("torch", "transformers", "peft", "accelerate")
+PREFERENCE_PACKAGES = ("datasets", "trl")
 
 
 def main() -> None:
@@ -44,6 +45,7 @@ def build_report() -> Dict[str, Any]:
         },
         "nvidia_smi": _nvidia_smi(),
         "packages": {package: _package_version(package) for package in TRAIN_PACKAGES},
+        "preference_packages": {package: _package_version(package) for package in PREFERENCE_PACKAGES},
         "torch": _torch_report(),
         "tracehound": {
             "api_configured": bool(os.getenv("TRACEHOUND_API_BASE") and os.getenv("TRACEHOUND_MODEL")),
