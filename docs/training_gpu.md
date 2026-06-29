@@ -24,6 +24,12 @@ Install the PyTorch build that matches the server CUDA version. Use the command 
 pip install -e ".[train]"
 ```
 
+`bitsandbytes` is intentionally outside the default `train` extra because some Linux mirrors only expose older wheels. Install it only when QLoRA is needed:
+
+```bash
+pip install -e ".[qlora]"
+```
+
 Check that CUDA is visible:
 
 ```bash

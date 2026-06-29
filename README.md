@@ -38,6 +38,11 @@ pip install -e ".[train]"
 ```
 
 Install training dependencies only on a suitable Linux/GPU server or a contest-provided environment.
+`bitsandbytes` is not installed by default because many contest mirrors lag behind current wheels. Enable it only for QLoRA experiments:
+
+```bash
+pip install -e ".[qlora]"
+```
 
 List prepared local/API model candidates:
 
@@ -72,6 +77,7 @@ bash scripts/run_remote_demo.sh
 ```
 
 The bootstrap path creates a conda env, optionally installs CUDA PyTorch wheels, installs TraceHound with training extras, runs GPU diagnostics, and runs a smoke test.
+It does not install `bitsandbytes` unless `TRACEHOUND_INSTALL_QLORA=1` is set.
 
 The server template defaults to the Intern route:
 

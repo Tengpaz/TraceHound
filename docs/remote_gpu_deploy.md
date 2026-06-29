@@ -20,6 +20,7 @@ TRACEHOUND_PORT=8000
 TRACEHOUND_TORCH_INDEX_URL=https://download.pytorch.org/whl/cu121
 TRACEHOUND_RUN_SMOKE=1
 TRACEHOUND_MODEL_PROFILE=internlm3-8b-instruct
+TRACEHOUND_INSTALL_QLORA=0
 ```
 
 Then run:
@@ -144,6 +145,7 @@ Persistent paths are mounted from the repo:
 ## Common Fixes
 
 - `CUDA is not visible to torch`: check `nvidia-smi`, the NVIDIA driver, and whether `TRACEHOUND_TORCH_INDEX_URL` matches the server. Set `TRACEHOUND_SKIP_TORCH=1` if the contest image already includes a correct PyTorch build.
+- `No matching distribution found for bitsandbytes`: keep `TRACEHOUND_INSTALL_QLORA=0` for the default LoRA/SFT path. Install `pip install -e ".[qlora]"` only if QLoRA is required and the server mirror has a compatible wheel.
 - No conda on server: run `bash scripts/install_miniconda_linux.sh`; Docker is not required.
 - API works locally but not on the server: copy only non-secret template values from `.env.server.example`, then add the server API key directly to `.env`; never commit it.
 - Port is not reachable: use SSH tunneling or open the firewall/security group for `TRACEHOUND_PORT`.

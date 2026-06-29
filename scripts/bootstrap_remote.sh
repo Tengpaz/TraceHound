@@ -15,6 +15,7 @@ fi
 ENV_NAME="${TRACEHOUND_ENV_NAME:-tracehound-gpu}"
 PYTHON_VERSION="${TRACEHOUND_PYTHON_VERSION:-3.10}"
 INSTALL_TRAIN="${TRACEHOUND_INSTALL_TRAIN:-1}"
+INSTALL_QLORA="${TRACEHOUND_INSTALL_QLORA:-0}"
 RUN_SMOKE="${TRACEHOUND_RUN_SMOKE:-1}"
 START_DEMO="${TRACEHOUND_START_DEMO:-0}"
 HOST="${TRACEHOUND_HOST:-0.0.0.0}"
@@ -88,6 +89,11 @@ fi
 
 echo "[tracehound] installing project: $EXTRAS"
 "${CONDA_RUN[@]}" python -m pip install -e "$EXTRAS"
+
+if [[ "$INSTALL_QLORA" == "1" ]]; then
+  echo "[tracehound] installing optional QLoRA dependencies"
+  "${CONDA_RUN[@]}" python -m pip install -e ".[qlora]"
+fi
 
 echo "[tracehound] environment diagnostic"
 "${CONDA_RUN[@]}" python scripts/gpu_doctor.py || true
