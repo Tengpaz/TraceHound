@@ -11,6 +11,9 @@ from typing import Any, Dict, Iterable, List
 METRIC_COLUMNS = [
     "samples",
     "accuracy",
+    "precision",
+    "recall",
+    "f_score",
     "unsafe_recall",
     "false_block_rate",
     "macro_f1",
@@ -27,8 +30,9 @@ METRIC_COLUMNS = [
 
 CHART_METRICS = [
     ("accuracy", "Accuracy"),
-    ("unsafe_recall", "Unsafe Recall"),
-    ("macro_f1", "Macro F1"),
+    ("precision", "Precision"),
+    ("recall", "Recall"),
+    ("f_score", "F-score"),
     ("evidence_hit_rate", "Evidence Hit"),
     ("average_cost_reduction_ratio", "Cost Reduction"),
 ]
@@ -58,6 +62,8 @@ def build_report(data: Dict[str, Any], chart_path: str | Path | None = None) -> 
             "",
             "## Notes",
             "",
+            "- `accuracy` is the binary safe/unsafe accuracy.",
+            "- `precision`, `recall`, and `f_score` use fine-grained unsafe taxonomy exact match: `risk_source`, `failure_mode`, and `harm_type` must all match.",
             "- `final_only` removes intermediate tool calls and observations, so it is expected to miss risks that occur before the final answer.",
             "- API and hybrid API rows are intentionally small by default to avoid unnecessary quota use.",
             "- `total_estimated_cost_usd` uses `TRACEHOUND_INPUT_PRICE_PER_1M` and `TRACEHOUND_OUTPUT_PRICE_PER_1M` when set.",
@@ -96,7 +102,7 @@ def render_metric_chart_svg(data: Dict[str, Any]) -> str:
         '<rect width="100%" height="100%" rx="18" fill="#061018"/>',
         '<rect x="1" y="1" width="1058" height="' + str(height - 2) + '" rx="17" fill="none" stroke="rgba(105,255,230,0.28)"/>',
         '<text x="34" y="38" fill="#eefcff" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="22" font-weight="800">TraceHound Metrics</text>',
-        '<text x="34" y="60" fill="#8ba4b5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12">accuracy / recall / evidence / cost compression</text>',
+        '<text x="34" y="60" fill="#8ba4b5" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12">binary accuracy / fine-grained taxonomy precision-recall / evidence / cost compression</text>',
     ]
     y = header_height
     if not experiments:

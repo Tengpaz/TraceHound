@@ -84,6 +84,7 @@ bash scripts/run_remote_demo.sh
 
 The bootstrap path creates a conda env, optionally installs CUDA PyTorch wheels, installs TraceHound with training extras, runs GPU diagnostics, and runs a smoke test.
 It does not install `datasets/trl/pyarrow` unless `TRACEHOUND_INSTALL_PREFERENCE=1` is set, and it does not install `bitsandbytes` unless `TRACEHOUND_INSTALL_QLORA=1` is set.
+It preinstalls native training dependencies such as `sentencepiece` from conda-forge by default to avoid fragile source builds on restricted server mirrors. If needed, disable that with `TRACEHOUND_PREINSTALL_NATIVE_DEPS=0`.
 
 The server template defaults to the Intern route:
 

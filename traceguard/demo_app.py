@@ -112,6 +112,10 @@ def create_app():
                 return case
         raise HTTPException(status_code=404, detail=f"unknown case id: {case_id}")
 
+    @app.get("/api/eval-datasets")
+    def eval_datasets():
+        return {"datasets": _list_eval_datasets(root)}
+
     @app.post("/api/evaluate")
     async def evaluate(request: Request):
         body: Dict[str, Any] = await request.json()
@@ -143,13 +147,28 @@ def create_app():
         body: Dict[str, Any] = await request.json()
         mode = body.get("mode", "layered")
         judge_name = body.get("judge", "heuristic")
+        dataset_path = str(body.get("dataset_path") or "").strip()
         raw_cases = body.get("cases")
-        if isinstance(raw_cases, dict):
-            raw_cases = [raw_cases]
-        if not isinstance(raw_cases, list) or not raw_cases:
-            raise HTTPException(status_code=400, detail="body.cases must be a non-empty array")
+        data_source = "web_demo_upload"
+        if dataset_path:
+            try:
+                rows = _load_batch_cases_from_dataset(root, dataset_path)
+            except (FileNotFoundError, ValueError, TypeError, KeyError) as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+            data_source = dataset_path
+        else:
+            if isinstance(raw_cases, dict):
+                raw_cases = [raw_cases]
+            if not isinstance(raw_cases, list) or not raw_cases:
+                raise HTTPException(status_code=400, detail="body.cases or body.dataset_path must be provided")
+            try:
+                rows = [_case_and_gold(raw_case, index) for index, raw_case in enumerate(raw_cases, start=1)]
+            except (KeyError, TypeError, ValueError) as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
         max_cases = 50 if judge_name in {"api", "hybrid"} else 1000
-        if len(raw_cases) > max_cases:
+        if dataset_path and judge_name == "heuristic":
+            max_cases = 20000
+        if len(rows) > max_cases:
             raise HTTPException(status_code=400, detail=f"batch limit is {max_cases} cases for judge={judge_name}")
         judge = _build_judge_or_400(judge_name, HTTPException)
         predictions: list[RiskReport] = []
@@ -158,11 +177,7 @@ def create_app():
         gold_predictions: list[RiskReport] = []
         cases_with_gold = 0
         started = datetime.now(timezone.utc)
-        for index, raw_case in enumerate(raw_cases, start=1):
-            try:
-                case, gold = _case_and_gold(raw_case, index)
-            except (KeyError, TypeError, ValueError) as exc:
-                raise HTTPException(status_code=400, detail=f"case {index}: {exc}") from exc
+        for case, gold in rows:
             report = evaluate_case(case, mode=mode, judge=judge)
             predictions.append(report)
             item = {"id": case.id, "report": dump_model(report)}
@@ -181,13 +196,13 @@ def create_app():
         chart_path = reports_dir / f"{report_id}.svg"
         experiment_data = {
             "generated_at": datetime.now(timezone.utc).isoformat(),
-            "data": "web_demo_upload",
+            "data": data_source,
             "experiments": [
                 {
-                    "name": "uploaded_batch",
+                    "name": "dataset_batch" if dataset_path else "uploaded_batch",
                     "mode": mode,
                     "judge": judge_name,
-                    "limit": len(raw_cases),
+                    "limit": len(rows),
                     "metrics": metrics,
                 }
             ],
@@ -201,7 +216,8 @@ def create_app():
             "generated_at": started.isoformat(),
             "mode": mode,
             "judge": judge_name,
-            "samples": len(raw_cases),
+            "source": data_source,
+            "samples": len(rows),
             "gold_samples": cases_with_gold,
             "metrics": metrics,
             "predictions": serialized,
@@ -467,6 +483,126 @@ def _case_and_gold(raw: Dict[str, Any], index: int) -> tuple[TrajectoryCase, Ris
         gold_raw = raw.get("label", source.get("label"))
     gold = _normalize_gold(gold_raw)
     return case, gold
+
+
+def _load_batch_cases_from_dataset(root: Path, raw_path: str) -> list[tuple[TrajectoryCase, RiskReport | None]]:
+    dataset_path = _dataset_path(root, raw_path)
+    if dataset_path is None or not dataset_path.exists():
+        raise FileNotFoundError(f"unknown eval dataset: {raw_path}")
+    rows: list[tuple[TrajectoryCase, RiskReport | None]] = []
+    with dataset_path.open("r", encoding="utf-8") as handle:
+        for line_no, line in enumerate(handle, start=1):
+            if not line.strip():
+                continue
+            try:
+                raw = json.loads(line)
+                rows.append(_case_and_gold(raw, line_no))
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+                raise ValueError(f"{dataset_path.relative_to(root)} line {line_no}: {exc}") from exc
+    if not rows:
+        raise ValueError(f"eval dataset is empty: {dataset_path.relative_to(root)}")
+    return rows
+
+
+def _list_eval_datasets(root: Path) -> list[Dict[str, Any]]:
+    datasets: list[Dict[str, Any]] = []
+    seen: set[Path] = set()
+    for path in _candidate_eval_dataset_paths(root):
+        resolved = path.resolve()
+        if resolved in seen or not path.exists():
+            continue
+        seen.add(resolved)
+        try:
+            datasets.append(_dataset_summary_from_file(root, path))
+        except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):
+            continue
+    datasets.sort(key=lambda item: item.get("modified_ts", 0), reverse=True)
+    return datasets
+
+
+def _candidate_eval_dataset_paths(root: Path) -> list[Path]:
+    candidates: list[Path] = []
+    latest_pointer = root / "data/tmp/generated/latest"
+    if latest_pointer.exists():
+        latest_dir = Path(latest_pointer.read_text(encoding="utf-8").strip())
+        if not latest_dir.is_absolute():
+            latest_dir = root / latest_dir
+        candidates.append(latest_dir / "synthetic_eval.jsonl")
+    generated_dir = root / "data/tmp/generated"
+    if generated_dir.exists():
+        candidates.extend(generated_dir.glob("*/synthetic_eval.jsonl"))
+    data_dir = root / "data"
+    if data_dir.exists():
+        candidates.extend(data_dir.glob("**/synthetic_eval.jsonl"))
+        candidates.extend(data_dir.glob("**/*eval*.jsonl"))
+    return candidates
+
+
+def _dataset_summary_from_file(root: Path, path: Path) -> Dict[str, Any]:
+    dataset_path = _dataset_path(root, str(path))
+    if dataset_path is None:
+        raise ValueError(f"dataset path outside project: {path}")
+    samples = 0
+    gold_samples = 0
+    labels: dict[str, int] = {}
+    scenarios: dict[str, int] = {}
+    with dataset_path.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            raw = json.loads(line)
+            samples += 1
+            try:
+                _, gold = _case_and_gold(raw, samples)
+            except (KeyError, TypeError, ValueError):
+                gold = None
+            if gold is not None:
+                gold_samples += 1
+                labels[gold.label] = labels.get(gold.label, 0) + 1
+            metadata = raw.get("metadata") if isinstance(raw, dict) else {}
+            scenario = str((metadata or {}).get("scenario") or "unknown")
+            scenarios[scenario] = scenarios.get(scenario, 0) + 1
+    stat = dataset_path.stat()
+    relative = str(dataset_path.relative_to(root))
+    return {
+        "path": relative,
+        "name": _dataset_display_name(dataset_path, root),
+        "samples": samples,
+        "gold_samples": gold_samples,
+        "labels": labels,
+        "scenarios": scenarios,
+        "size_bytes": stat.st_size,
+        "modified_ts": int(stat.st_mtime),
+        "modified": datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+    }
+
+
+def _dataset_display_name(path: Path, root: Path) -> str:
+    try:
+        relative = path.relative_to(root)
+    except ValueError:
+        return path.name
+    parts = relative.parts
+    if len(parts) >= 4 and parts[0:3] == ("data", "tmp", "generated"):
+        return f"{parts[3]} / {path.name}"
+    if len(parts) >= 3 and parts[0:2] == ("data", "tmp"):
+        return f"{parts[-2]} / {path.name}"
+    return str(relative)
+
+
+def _dataset_path(root: Path, raw_path: str) -> Path | None:
+    candidate = _project_path(root, raw_path)
+    if candidate is None:
+        return None
+    try:
+        relative = candidate.relative_to(root.resolve())
+    except ValueError:
+        return None
+    if not relative.parts or relative.parts[0] != "data":
+        return None
+    if candidate.suffix != ".jsonl" or "eval" not in candidate.name:
+        return None
+    return candidate
 
 
 def _normalize_gold(raw: Any) -> RiskReport | None:

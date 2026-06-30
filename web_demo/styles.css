@@ -427,20 +427,65 @@ dt,
 
 .upload-strip {
   align-items: stretch;
-  grid-template-columns: minmax(260px, 0.8fr) minmax(380px, 1.2fr);
+  grid-template-columns: minmax(360px, 0.9fr) minmax(520px, 1.1fr);
+}
+
+.batch-source-panel {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.drop-zone,
+.dataset-picker {
+  align-items: center;
+  background: rgba(2, 9, 14, 0.68);
+  border-radius: 10px;
+  display: grid;
+  gap: 6px;
+  min-height: 78px;
+  padding: 14px;
 }
 
 .drop-zone {
-  align-items: center;
-  background: rgba(2, 9, 14, 0.68);
   border: 1px dashed var(--line-strong);
-  border-radius: 10px;
   cursor: pointer;
-  display: grid;
-  gap: 6px;
-  min-height: 92px;
-  padding: 16px;
   transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.dataset-picker {
+  align-items: end;
+  border: 1px solid var(--line);
+  gap: 8px 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 104px;
+}
+
+.dataset-picker label {
+  min-width: 0;
+}
+
+.dataset-picker strong {
+  color: var(--cyan);
+  display: block;
+  font: 850 13px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  margin-bottom: 8px;
+}
+
+.dataset-picker select {
+  width: 100%;
+}
+
+.dataset-picker button {
+  align-self: end;
+  height: 42px;
+  white-space: nowrap;
+}
+
+.dataset-picker > span {
+  color: var(--muted);
+  font-size: 12px;
+  grid-column: 1 / -1;
 }
 
 .drop-zone:hover,
@@ -463,10 +508,12 @@ dt,
 }
 
 .batch-console {
+  align-content: center;
   align-items: center;
   display: grid;
   gap: 14px;
   grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 194px;
 }
 
 .batch-console strong {
@@ -959,7 +1006,8 @@ input[type="checkbox"] {
   .hero-grid,
   .workspace,
   .model-layout,
-  .enchant-layout {
+  .enchant-layout,
+  .upload-strip {
     grid-template-columns: 1fr;
   }
 
@@ -1019,6 +1067,18 @@ input[type="checkbox"] {
 
   .batch-actions {
     justify-content: stretch;
+  }
+
+  .batch-console {
+    min-height: auto;
+  }
+
+  .dataset-picker {
+    grid-template-columns: 1fr;
+  }
+
+  .dataset-picker button {
+    width: 100%;
   }
 
   .batch-actions > * {

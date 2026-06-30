@@ -17,6 +17,7 @@ PYTHON_VERSION="${TRACEHOUND_PYTHON_VERSION:-3.10}"
 INSTALL_TRAIN="${TRACEHOUND_INSTALL_TRAIN:-1}"
 INSTALL_PREFERENCE="${TRACEHOUND_INSTALL_PREFERENCE:-0}"
 INSTALL_QLORA="${TRACEHOUND_INSTALL_QLORA:-0}"
+PREINSTALL_NATIVE_DEPS="${TRACEHOUND_PREINSTALL_NATIVE_DEPS:-1}"
 RUN_SMOKE="${TRACEHOUND_RUN_SMOKE:-1}"
 START_DEMO="${TRACEHOUND_START_DEMO:-0}"
 HOST="${TRACEHOUND_HOST:-0.0.0.0}"
@@ -80,6 +81,11 @@ fi
 
 echo "[tracehound] upgrading pip"
 "${CONDA_RUN[@]}" python -m pip install --upgrade pip
+
+if [[ "$PREINSTALL_NATIVE_DEPS" == "1" && "$INSTALL_TRAIN" == "1" ]]; then
+  echo "[tracehound] preinstalling native train dependencies with conda-forge"
+  "$CONDA_EXE" install -y -n "$ENV_NAME" -c conda-forge sentencepiece protobuf cmake pkg-config
+fi
 
 if [[ "$SKIP_TORCH" == "1" ]]; then
   echo "[tracehound] skipping torch install because TRACEHOUND_SKIP_TORCH=1"

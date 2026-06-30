@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>TraceHound</title>
-    <link rel="stylesheet" href="/static/styles.css?v=production-v1" />
+    <link rel="stylesheet" href="/static/styles.css?v=batch-dataset-v1" />
   </head>
   <body>
     <div class="backdrop" aria-hidden="true"></div>
@@ -117,10 +117,22 @@
         </section>
 
         <section class="upload-strip" aria-label="Batch upload and reports">
-          <div id="dropZone" class="drop-zone" tabindex="0" role="button">
-            <input id="jsonUpload" type="file" accept=".json,.jsonl,application/json,application/x-ndjson" multiple hidden />
-            <strong data-i18n="eval.uploadTitle">上传 JSON / JSONL</strong>
-            <span data-i18n="eval.uploadHint">点击选择文件，或拖拽轨迹文件到这里</span>
+          <div class="batch-source-panel">
+            <div id="dropZone" class="drop-zone" tabindex="0" role="button">
+              <input id="jsonUpload" type="file" accept=".json,.jsonl,application/json,application/x-ndjson" multiple hidden />
+              <strong data-i18n="eval.uploadTitle">上传 JSON / JSONL</strong>
+              <span data-i18n="eval.uploadHint">点击选择文件，或拖拽轨迹文件到这里</span>
+            </div>
+            <div class="dataset-picker">
+              <label>
+                <strong data-i18n="eval.datasetTitle">选择已有生成评测集</strong>
+                <select id="evalDatasetSelect" aria-label="Generated eval dataset">
+                  <option value="" data-i18n="eval.datasetPlaceholder">不使用已有评测集</option>
+                </select>
+              </label>
+              <button id="refreshDatasetsBtn" class="secondary-button" type="button" data-i18n="eval.refreshDatasets">刷新列表</button>
+              <span id="datasetHint" data-i18n="eval.datasetHint">选择后可直接进行批量评估，无需重新上传文件。</span>
+            </div>
           </div>
           <div class="batch-console">
             <div>
@@ -548,6 +560,6 @@
         </section>
       </section>
     </main>
-    <script src="/static/app.js?v=production-v1"></script>
+    <script src="/static/app.js?v=batch-dataset-v1"></script>
   </body>
 </html>

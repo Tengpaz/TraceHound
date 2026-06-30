@@ -11,12 +11,15 @@ const langToggle = $("#langToggle");
 const jsonUpload = $("#jsonUpload");
 const dropZone = $("#dropZone");
 const batchRunBtn = $("#batchRunBtn");
+const evalDatasetSelect = $("#evalDatasetSelect");
+const refreshDatasetsBtn = $("#refreshDatasetsBtn");
 
 let currentCase = null;
 let runtimeInfo = null;
 let modelInfo = null;
 let enchantmentInfo = null;
 let uploadedCases = [];
+let evalDatasets = [];
 let language = "zh";
 
 const scenarioLabels = {
@@ -60,6 +63,8 @@ const copy = {
     "status.batchError": "批量失败",
     "batch.noGold": "未发现 gold 标签。报告已生成，但不包含聚合准确率指标。",
     "batch.ready": "已准备好批量评估。",
+    "batch.datasetReady": "已选择生成评测集，可直接批量评估。",
+    "batch.noDatasets": "未发现已生成的评测集。",
     "batch.noValidCases": "未找到有效案例",
     "batch.uploadHint": "请上传 JSON、JSONL，或包含 cases 数组的对象。",
     "batch.noUpload": "暂无上传批次",
@@ -93,6 +98,10 @@ const copy = {
     "eval.apiInference": "第三方 API 推理",
     "eval.uploadTitle": "上传 JSON / JSONL",
     "eval.uploadHint": "点击选择文件，或拖拽轨迹文件到这里",
+    "eval.datasetTitle": "选择已有生成评测集",
+    "eval.datasetPlaceholder": "不使用已有评测集",
+    "eval.datasetHint": "选择后可直接进行批量评估，无需重新上传文件。",
+    "eval.refreshDatasets": "刷新列表",
     "eval.batchRun": "批量评估",
     "eval.endpoint": "端点",
     "eval.key": "密钥",
@@ -229,6 +238,8 @@ const copy = {
     "status.batchError": "Batch Error",
     "batch.noGold": "No gold labels found. Reports were generated without aggregate accuracy metrics.",
     "batch.ready": "Ready for batch evaluation.",
+    "batch.datasetReady": "Generated eval dataset selected. Ready for batch evaluation.",
+    "batch.noDatasets": "No generated eval datasets found.",
     "batch.noValidCases": "No valid cases found",
     "batch.uploadHint": "Upload JSON, JSONL, or an object with a cases array.",
     "batch.noUpload": "No uploaded batch",
@@ -262,6 +273,10 @@ const copy = {
     "eval.apiInference": "Third-party API Inference",
     "eval.uploadTitle": "Upload JSON / JSONL",
     "eval.uploadHint": "Click to choose files, or drop trajectory files here",
+    "eval.datasetTitle": "Generated Eval Dataset",
+    "eval.datasetPlaceholder": "Do not use generated dataset",
+    "eval.datasetHint": "Select a generated eval set to run batch evaluation without uploading again.",
+    "eval.refreshDatasets": "Refresh",
     "eval.batchRun": "Batch Evaluate",
     "eval.endpoint": "Endpoint",
     "eval.key": "Key",
@@ -448,6 +463,7 @@ function applyLanguage() {
   if (enchantmentInfo) {
     renderEnchantmentStatus(enchantmentInfo);
   }
+  renderEvalDatasetOptions(evalDatasets, evalDatasetSelect?.value || "");
 }
 
 function showPage(pageName) {
@@ -557,16 +573,16 @@ function renderBatchResult(result) {
   setText(
     "#uploadSummary",
     language === "zh"
-      ? `${result.samples} 条样本 · ${result.gold_samples} 条有标签 · ${result.judge}/${result.mode}`
-      : `${result.samples} samples · ${result.gold_samples} labeled · ${result.judge}/${result.mode}`,
+      ? `${result.samples} 条样本 · ${result.gold_samples} 条有标签 · ${result.judge}/${result.mode} · ${result.source || ""}`
+      : `${result.samples} samples · ${result.gold_samples} labeled · ${result.judge}/${result.mode} · ${result.source || ""}`,
   );
   const metrics = result.metrics || {};
   if (Object.keys(metrics).length) {
     setText(
       "#batchMetrics",
-      `accuracy=${formatMetric(metrics.accuracy)} · unsafe_recall=${formatMetric(metrics.unsafe_recall)} · macro_f1=${formatMetric(
-        metrics.macro_f1,
-      )} · est_cost=${formatCost(metrics.total_estimated_cost_usd)}`,
+      `Accuracy=${formatMetric(metrics.accuracy)} · Precision=${formatMetric(metrics.precision)} · Recall=${formatMetric(
+        metrics.recall,
+      )} · F-score=${formatMetric(metrics.f_score)} · est_cost=${formatCost(metrics.total_estimated_cost_usd)}`,
     );
   } else {
     setText("#batchMetrics", t("batch.noGold"));
@@ -601,6 +617,7 @@ async function loadCases() {
     setText("#apiStatusBadge", "Runtime Error");
     console.error(error);
   }
+  await loadEvalDatasets();
   const cases = await fetchJson("/api/cases");
   setText("#homeDatasetCount", `${cases.length} seed cases`);
   caseSelect.innerHTML = "";
@@ -613,6 +630,89 @@ async function loadCases() {
   if (cases.length) {
     renderCase(await fetchJson(`/api/cases/${cases[0].id}`));
   }
+}
+
+async function loadEvalDatasets() {
+  if (!evalDatasetSelect) {
+    return;
+  }
+  const selected = evalDatasetSelect.value;
+  const response = await fetchJson("/api/eval-datasets");
+  evalDatasets = response.datasets || [];
+  renderEvalDatasetOptions(evalDatasets, selected);
+}
+
+function renderEvalDatasetOptions(datasets, selectedPath = "") {
+  if (!evalDatasetSelect) {
+    return;
+  }
+  evalDatasetSelect.innerHTML = "";
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = t("eval.datasetPlaceholder");
+  evalDatasetSelect.append(placeholder);
+  if (!(datasets || []).length) {
+    const empty = document.createElement("option");
+    empty.value = "";
+    empty.disabled = true;
+    empty.textContent = t("batch.noDatasets");
+    evalDatasetSelect.append(empty);
+  }
+  for (const dataset of datasets || []) {
+    const option = document.createElement("option");
+    option.value = dataset.path;
+    option.textContent = datasetOptionLabel(dataset);
+    option.dataset.samples = dataset.samples || 0;
+    option.dataset.goldSamples = dataset.gold_samples || 0;
+    evalDatasetSelect.append(option);
+  }
+  if (selectedPath && (datasets || []).some((dataset) => dataset.path === selectedPath)) {
+    evalDatasetSelect.value = selectedPath;
+  }
+}
+
+function datasetOptionLabel(dataset) {
+  const labels = dataset.labels || {};
+  const labelText = Object.keys(labels).length
+    ? Object.entries(labels)
+        .map(([label, count]) => `${label}:${count}`)
+        .join(" ")
+    : language === "zh"
+      ? "无标签"
+      : "unlabeled";
+  const updated = dataset.modified ? new Date(dataset.modified).toLocaleString(language === "zh" ? "zh-CN" : "en-US") : "";
+  return `${dataset.name || dataset.path} · ${dataset.samples || 0} rows · ${labelText}${updated ? ` · ${updated}` : ""}`;
+}
+
+function selectedEvalDataset() {
+  const path = evalDatasetSelect?.value || "";
+  return evalDatasets.find((dataset) => dataset.path === path) || null;
+}
+
+function handleEvalDatasetSelection() {
+  clearDownloads();
+  const dataset = selectedEvalDataset();
+  if (!dataset) {
+    setText(
+      "#uploadSummary",
+      uploadedCases.length
+        ? language === "zh"
+          ? `已上传 ${uploadedCases.length} 条案例`
+          : `${uploadedCases.length} uploaded case${uploadedCases.length === 1 ? "" : "s"}`
+        : t("batch.noUpload"),
+    );
+    setText("#batchMetrics", uploadedCases.length ? t("batch.ready") : t("batch.placeholder"));
+    return;
+  }
+  uploadedCases = [];
+  setText(
+    "#uploadSummary",
+    language === "zh"
+      ? `${dataset.name} · ${dataset.samples} 条样本 · ${dataset.gold_samples} 条有标签`
+      : `${dataset.name} · ${dataset.samples} samples · ${dataset.gold_samples} labeled`,
+  );
+  setText("#batchMetrics", dataset.gold_samples ? t("batch.datasetReady") : t("batch.noGold"));
+  setStatus(t("common.ready"));
 }
 
 function shortCaseName(id) {
@@ -898,6 +998,9 @@ async function loadUploadedFiles(files) {
     parsed.push(...parseTrajectoryFile(text, file.name));
   }
   uploadedCases = parsed;
+  if (evalDatasetSelect) {
+    evalDatasetSelect.value = "";
+  }
   clearDownloads();
   if (uploadedCases.length) {
     renderCase(uploadedCases[0]);
@@ -952,14 +1055,16 @@ function clearDownloads() {
 }
 
 async function runBatchEvaluation() {
-  const cases = uploadedCases.length ? uploadedCases : [JSON.parse(caseInput.value)];
+  const datasetPath = evalDatasetSelect?.value || "";
+  const cases = datasetPath ? [] : uploadedCases.length ? uploadedCases : [JSON.parse(caseInput.value)];
   batchRunBtn.disabled = true;
   setStatus(t("status.batchRunning"));
   try {
     const result = await postJson("/api/batch-evaluate", {
       mode: modeSelect.value,
       judge: judgeSelect.value,
-      cases,
+      dataset_path: datasetPath || undefined,
+      cases: datasetPath ? undefined : cases,
     });
     renderBatchResult(result);
     setStatus(t("status.batchDone"));
@@ -1225,6 +1330,19 @@ jsonUpload.addEventListener("change", () => {
     setStatus(t("status.uploadError"));
     setText("#batchMetrics", error.message);
   });
+});
+evalDatasetSelect.addEventListener("change", handleEvalDatasetSelection);
+refreshDatasetsBtn.addEventListener("click", () => {
+  refreshDatasetsBtn.disabled = true;
+  loadEvalDatasets()
+    .then(handleEvalDatasetSelection)
+    .catch((error) => {
+      setStatus(t("common.error"));
+      setText("#batchMetrics", error.message);
+    })
+    .finally(() => {
+      refreshDatasetsBtn.disabled = false;
+    });
 });
 batchRunBtn.addEventListener("click", runBatchEvaluation);
 
