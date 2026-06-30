@@ -102,6 +102,16 @@ scp dist/tracehound-<sha>.tar.gz <user>@<server-ip>:~/
 
 Docker GPU deployment remains optional only if the server already has Docker plus NVIDIA Container Toolkit. See `docs/remote_gpu_deploy.md` for CUDA wheel overrides, SSH tunneling, tarball deployment, optional Docker notes, and training preflight commands.
 
+If GPUs are only available through a Slurm queue, use the cluster wrapper instead of running GPU commands on the login node:
+
+```bash
+bash scripts/slurm_gpu_test.sh
+TRACEHOUND_SLURM_GPUS=0 bash scripts/slurm_run.sh 'python scripts/evaluate.py data/tmp/remote_smoke/synthetic_eval.jsonl --mode layered'
+TRACEHOUND_SLURM_JOB_NAME=TH_SFT TRACEHOUND_SLURM_GPUS=1 bash scripts/slurm_run.sh 'python scripts/train_sft.py --data data/synthetic_sft.jsonl --model-profile internlm2_5-1_8b-chat --max-samples 32'
+```
+
+For Slurm + Apptainer, set `TRACEHOUND_USE_APPTAINER=1` and `TRACEHOUND_APPTAINER_IMAGE=/path/to/image.sif`. See `docs/slurm_cluster_usage.md`.
+
 ## AgentDoG Official Reproduction
 
 TraceHound now separates official reproduction from local synthetic generation.

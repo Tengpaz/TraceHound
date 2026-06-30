@@ -34,6 +34,17 @@ bash scripts/bootstrap_remote.sh
 
 The bootstrap script creates `tracehound-gpu`, installs CUDA PyTorch wheels unless disabled, installs TraceHound with dev/train extras, runs `scripts/gpu_doctor.py`, and runs the smoke path.
 
+If the login node does not expose GPUs, run GPU diagnostics and training through Slurm:
+
+```bash
+bash scripts/slurm_gpu_test.sh
+TRACEHOUND_SLURM_JOB_NAME=TH_SFT TRACEHOUND_SLURM_GPUS=1 \
+  bash scripts/slurm_run.sh \
+  'python scripts/train_sft.py --data data/synthetic_sft.jsonl --model-profile internlm2_5-1_8b-chat --max-samples 32'
+```
+
+Use `TRACEHOUND_USE_APPTAINER=1` and `TRACEHOUND_APPTAINER_IMAGE=/path/to/image.sif` for Slurm + Apptainer clusters. Full examples are in `docs/slurm_cluster_usage.md`.
+
 Start the demo:
 
 ```bash
