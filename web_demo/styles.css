@@ -348,7 +348,7 @@ dt,
 .home-panels {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   margin: -34px 0 36px;
 }
 
@@ -751,6 +751,17 @@ pre {
   grid-template-columns: minmax(340px, 0.9fr) minmax(420px, 1.1fr);
 }
 
+.enchant-layout {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(340px, 0.82fr) minmax(480px, 1.18fr);
+}
+
+.enchant-layout > .job-panel,
+.enchant-layout > #enchantedModelsPanel {
+  grid-column: 1 / -1;
+}
+
 .model-name {
   border: 1px solid var(--line-strong);
   border-radius: 10px;
@@ -759,6 +770,37 @@ pre {
   margin-bottom: 16px;
   padding: 16px;
   text-shadow: 0 0 22px rgba(105, 255, 230, 0.42);
+}
+
+.compact-model-name {
+  font-size: clamp(18px, 2.2vw, 28px);
+  min-height: 72px;
+  overflow-wrap: anywhere;
+}
+
+.formula-box {
+  background: rgba(2, 9, 14, 0.52);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-top: 16px;
+  padding: 12px;
+}
+
+.formula-grid {
+  display: grid;
+  gap: 10px 12px;
+  grid-template-columns: minmax(112px, 0.5fr) minmax(0, 1fr);
+}
+
+.formula-grid span {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.formula-grid strong {
+  color: var(--cyan);
+  font: 800 13px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
 }
 
 .mode-grid,
@@ -780,6 +822,11 @@ pre {
 
 .form-grid {
   grid-template-columns: repeat(3, 1fr);
+}
+
+.enchant-form-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 16px;
 }
 
 .train-grid {
@@ -828,6 +875,36 @@ input[type="checkbox"] {
   width: 0%;
 }
 
+.live-stats {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 12px;
+}
+
+.live-stats article {
+  background: rgba(8, 22, 32, 0.66);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-width: 0;
+  padding: 10px;
+}
+
+.live-stats span {
+  color: var(--muted);
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.live-stats strong {
+  color: var(--cyan);
+  display: block;
+  font: 800 13px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+
 .job-log {
   display: grid;
   gap: 8px;
@@ -860,10 +937,29 @@ input[type="checkbox"] {
   padding: 10px;
 }
 
+.command-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.command-list code {
+  background: rgba(1, 7, 11, 0.92);
+  border: 1px solid rgba(105, 255, 230, 0.14);
+  border-left: 3px solid var(--cyan);
+  border-radius: 8px;
+  color: #cffff8;
+  display: block;
+  font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+  padding: 10px;
+}
+
 @media (max-width: 1180px) {
   .hero-grid,
   .workspace,
-  .model-layout {
+  .model-layout,
+  .enchant-layout {
     grid-template-columns: 1fr;
   }
 
@@ -911,9 +1007,14 @@ input[type="checkbox"] {
   .home-panels,
   .mode-grid,
   .form-grid,
+  .enchant-form-grid,
   .config-row,
   .train-grid {
     grid-template-columns: 1fr;
+  }
+
+  .live-stats {
+    grid-template-columns: 1fr 1fr;
   }
 
   .batch-actions {
@@ -960,7 +1061,8 @@ input[type="checkbox"] {
   }
 
   dl,
-  .dense-dl {
+  .dense-dl,
+  .live-stats {
     grid-template-columns: 1fr;
   }
 }

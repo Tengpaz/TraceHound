@@ -1,0 +1,18 @@
+# AgentDoG official reproduction assets.
+# This file documents the public official path; it is not a synthetic generator config.
+
+official_repo_url: https://github.com/AI45Lab/AgentDoG.git
+official_assets_root: external/agentdog_official
+official_manifest: reports/agentdog_official_manifest.json
+prompt_version: v1.5
+coarse_prompt: prompts/agentdog/v1.5/coarse_grained_moderation.txt
+unified_prompt: prompts/agentdog/v1.5/unified_safety_classification.txt
+atbench_dataset: AI45Research/ATBench
+atbench_claw_dataset: AI45Research/ATBench-Claw
+atbench_codex_dataset: AI45Research/ATBench-Codex
+app1_sft_dataset: AI45Research/APP1-Agentic-Safety-SFT-Data
+rl_runtime_dataset: quantumfr/agentic-lightweight-envs-runtime-20260528
+sft_recipe: external/agentdog_official/AgentDoG/Agentic Safety Training/Agentic SFT/README.md
+rl_recipe: external/agentdog_official/AgentDoG/Agentic Safety Training/Agentic RL/README.md
+public_llm_synthesis_engine: false
+synthetic_generator_status: surrogate_not_official

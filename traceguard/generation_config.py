@@ -12,10 +12,27 @@ DEFAULT_GENERATION_CONFIG: Dict[str, Any] = {
     "limit": None,
     "scenarios": [],
     "labels": [],
+    "generation_backend": "deterministic",
     "include_eval": True,
     "include_sft": True,
+    "include_agentdog_sft": True,
+    "include_agentdog15_official_sft": True,
     "include_preference": True,
     "include_rl": False,
+    "qc_policy": "agentdog_local",
+    "llm_qc": False,
+    "llm_generation_retries": 2,
+    "llm_generation_temperature": 0.2,
+    "semantic_repair_backend": "static",
+    "semantic_repair_rounds": 1,
+    "llm_qc_judge": "api",
+    "llm_qc_judges": [],
+    "llm_qc_mode": "compressed",
+    "llm_qc_consensus_threshold": 0.67,
+    "qc_min_score": 0.74,
+    "training_max_repair_level": "structural",
+    "write_qc_report": True,
+    "write_examples": False,
 }
 
 
@@ -62,7 +79,10 @@ def _parse_value(value: str) -> Any:
     try:
         return int(value)
     except ValueError:
-        return value.strip('"').strip("'")
+        try:
+            return float(value)
+        except ValueError:
+            return value.strip('"').strip("'")
 
 
 def _normalize_filter(value: Any) -> list[str]:
@@ -71,4 +91,3 @@ def _normalize_filter(value: Any) -> list[str]:
     if isinstance(value, list):
         return [str(item) for item in value if item not in (None, "", "all")]
     return [str(value)]
-

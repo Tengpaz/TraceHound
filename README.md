@@ -12,7 +12,7 @@ The current MVP focuses on:
 - Config-driven 10K-scale synthetic data generation for contest-day retuning.
 - API judge token-cost estimates via optional per-1M token pricing env vars.
 - InternLM/Intern-S2 model profiles, tokenizer `chat_template` prompt rendering, and optional local HF adapter.
-- A FastAPI demo with native HTML/CSS/JS, JSON/JSONL upload, batch evaluation, report downloads, and Guard Model ops.
+- A FastAPI demo with native HTML/CSS/JS, JSON/JSONL upload, batch evaluation, report downloads, Guard Model ops, and safety enchantment for target models.
 
 Training scripts are placeholders by design. They validate inputs and explain optional dependencies, but they do not require GPU packages in the default environment.
 
@@ -101,6 +101,31 @@ scp dist/tracehound-<sha>.tar.gz <user>@<server-ip>:~/
 
 Docker GPU deployment remains optional only if the server already has Docker plus NVIDIA Container Toolkit. See `docs/remote_gpu_deploy.md` for CUDA wheel overrides, SSH tunneling, tarball deployment, optional Docker notes, and training preflight commands.
 
+## AgentDoG Official Reproduction
+
+TraceHound now separates official reproduction from local synthetic generation.
+
+- Official reproduction uses the public AgentDoG repository, official prompts, official Hugging Face datasets, and the released SFT/RL recipes.
+- `scripts/generate_data.py` remains a TraceHound surrogate generator for smoke tests and contest adaptation; it is not labeled as the official AgentDoG DataEngine.
+- The public AgentDoG RL runtime release explicitly excludes the original LLM synthesis pipeline and prompt-generation code, so a from-scratch byte-identical data generation pipeline cannot be reconstructed from public assets alone.
+
+Prepare official assets:
+
+```bash
+python -m pip install -e ".[official]"
+python scripts/prepare_agentdog_official.py --clone-repo --download-dataset atbench --download-dataset app1_sft
+```
+
+See `docs/agentdog_official_reproduction.md` for the official asset manifest and reproduction workflow.
+
+For a paper-described approximation of the unreleased LLM synthesis engine, use the LLM backend with LLM self-repair:
+
+```bash
+python scripts/generate_data.py --config configs/generation_agentdog_llm.yaml --semantic-repair-backend llm
+```
+
+This follows the public pipeline shape: taxonomy tuple sampling, scenario/tool planning, LLM trajectory synthesis, deterministic purification, optional LLM self-repair, optional LLM semantic QC, and training-quality filtering. It is still a public-material approximation, not the unreleased official DataEngine source.
+
 ## Quick Start
 
 Generate synthetic data:
@@ -109,7 +134,25 @@ Generate synthetic data:
 python scripts/generate_data.py --out data
 ```
 
-The built-in generator currently emits 16 balanced cases across `shell`, `file`, `browser`, `email`, `database`, `code_executor`, `calendar`, and `credential` scenarios. You can filter it:
+The generator now supports the full AgentDoG-style synthesis flow: sample a `risk_source / failure_mode / harm_type` tuple, select a tool scenario and tool subset, build a structured execution plan, synthesize the user/tool/agent trajectory with a controlled risk trigger, run QC, then export train/eval formats. The default backend is a deterministic local planner for offline Mac use. To match AgentDoG's LLM Stage 2 trajectory synthesis, enable the LLM backend:
+
+```bash
+python scripts/generate_data.py --config configs/generation.yaml --agentdog-llm-generate --count 10
+```
+
+For the closest AgentDoG-style data path, combine LLM trajectory synthesis with strict LLM semantic QC:
+
+```bash
+python scripts/generate_data.py --config configs/generation.yaml --agentdog-llm-generate --agentdog-strict-qc
+```
+
+The same preset is available as:
+
+```bash
+python scripts/generate_data.py --config configs/generation_agentdog_llm.yaml
+```
+
+You can filter it:
 
 ```bash
 python scripts/generate_data.py --out data/tmp --scenario browser --label unsafe --limit 2
@@ -121,7 +164,23 @@ For contest-day retuning, edit `configs/generation.yaml` and run:
 python scripts/generate_data.py --config configs/generation.yaml
 ```
 
-The config supports output path, scale, scenario/label filters, and whether to export eval, SFT, preference, and RL-style datasets.
+The config supports output path, scale, `generation_backend: deterministic|llm`, scenario/label filters, and whether to export eval, TraceHound RiskReport SFT, AgentDoG binary SFT, AgentDoG fine-grained taxonomy SFT, preference, and RL-style datasets.
+The cleaning/QC path now mirrors AgentDoG's two-layer design as closely as a local pre-contest implementation can: deterministic validators check turn structure, tool invocation legality, step coherence, readability, taxonomy alignment, and unsafe attack success; optional LLM QC adds API judge voting and consensus filtering. Use `qc_policy: agentdog_strict` or `--agentdog-strict-qc` to require the LLM semantic layer; the default `agentdog_local` keeps API calls off for Mac/local generation.
+LLM generation also records production quality signals. `raw_agentdog_qc` captures pre-repair quality, `repair_level` is `none`, `structural`, or `semantic`, and `quality_report.json` reports raw pass rate, repair rate, semantic repair rate, and training eligibility. By default, eval exports keep every QC-passing sample, while SFT/preference/RL exports only keep samples up to `training_max_repair_level: structural`; semantic salvage samples are retained for evaluation and diagnostics but not used for training unless you explicitly relax that config.
+`examples/demo_cases.json` is not refreshed by default; use `--write-examples` when you intentionally want to update the checked-in demo snapshot.
+
+Default generated files include:
+
+- `synthetic_eval.jsonl`
+- `synthetic_sft.jsonl`
+- `agentdog_binary_sft.jsonl`
+- `agentdog_taxonomy_sft.jsonl`
+- `agentdog15_unified_sft.jsonl`
+- `agentdog15_coarse_sft.jsonl`
+- `synthetic_preference.jsonl`
+- `quality_report.json`
+- `rejected_samples.jsonl` when any sample is filtered
+- `training_rejected_samples.jsonl` when QC-passing samples are excluded from training by the production quality filter
 
 Run quality checks:
 
@@ -240,15 +299,31 @@ python scripts/train_sft.py --model-profile internlm3-8b-instruct --output-dir c
 python scripts/train_preference.py --base-model checkpoints/internlm3-sft --model-profile internlm3-8b-instruct --algorithm dpo --run
 ```
 
+Guard Model training and safety enchantment are separate paths:
+
+- `scripts/train_sft.py` and `scripts/train_preference.py` fine-tune the Guard Model itself so it judges agent trajectories better.
+- `scripts/enchant_safety.py` uses the current Guard Model as filter, judge, and safety reward to fine-tune another target policy/base model.
+
+Plan target-model safety enchantment without launching GPU work:
+
+```bash
+python scripts/enchant_safety.py \
+  --data-dir data/tmp/generated/latest \
+  --target-model-profile internlm3-8b-instruct \
+  --algorithm sft_dpo \
+  --output-dir checkpoints/safety_enchantment
+```
+
 See `docs/intern_model_playbook.md` for InternLM2.5-7B fallback, 20B notes, DPO/ORPO/GRPO planning, and cost-aware validation commands.
 
 ## Web Demo Features
 
-The demo has three pages:
+The demo has four pages:
 
 - `主页`: project positioning and telemetry summary.
 - `Agent轨迹安全评估`: single-case evaluation, JSON/JSONL upload or drag-and-drop, batch evaluation, evidence timeline, online guard simulation, and JSON/Markdown/SVG report download.
-- `Guard Model调配`: current serving mode, API/local model state, configurable data generation, live job progress, and local SFT / SFT+RL training preflight hooks.
+- `Guard Model调配`: current serving mode, API/local model state, configurable data generation, live job progress, and Guard Model SFT / SFT+RL training preflight hooks.
+- `安全能力附魔`: uses the active Guard Model to produce AgentDoG-style SFT/DPO/GRPO plans for improving a separate target policy/base model.
 
 Batch uploads accept:
 

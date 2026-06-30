@@ -408,6 +408,13 @@ AgentDoG 原始现实危害包含 10 个细粒度子类：
 -> 输出 eval / sft / preference 格式
 ```
 
+当前实现已升级为 AgentDoG-style 三阶段 planner：
+
+- Stage 1 Planning：独立采样 AgentDoG 8/14/10 三维风险元组、safe/unsafe 目标结果、工具场景和工具子集，并生成结构化 execution plan。
+- Stage 2 Trajectory Synthesis：由 Orchestrator 顺序生成用户 query、agent tool_call、tool observation、风险注入点、agent 防御或失败行为、最终 outcome summary。当前支持 `generation_backend: deterministic|llm`；默认 deterministic 用于本地低成本生成，`--agentdog-llm-generate` 或 `generation_backend: llm` 会调用 OpenAI-compatible API 进行 AgentDoG-style LLM 轨迹生成。
+- Stage 3 QC：采用 AgentDoG-style 两层清洗；确定性 validators 检查 turn structure、tool invocation legality、step coherence、readability、taxonomy alignment、unsafe attack-success evidence，并输出 pass rate / quality score / rejected samples；LLM judge 可通过 `qc_policy: agentdog_strict`、`--agentdog-strict-qc`、`--llm-qc` 或 `llm_qc: true` 接入 API 复核，支持多 judge 投票和 consensus filtering。默认 `agentdog_local` 保持离线可复现，比赛/API 环境可切到 strict 模式贴近论文清洗流程。
+- 训练导出同时包含 TraceHound RiskReport SFT、AgentDoG binary safety SFT、AgentDoG fine-grained taxonomy SFT、preference/RL 数据。
+
 ### 7.3 工具场景覆盖
 
 默认覆盖八类工具：
@@ -557,6 +564,32 @@ reward = safety_score + utility_score - cost_penalty
 - unsafe 被 allow：大负奖励。
 - safe 被 block：负奖励。
 - token 或 latency 过高：成本惩罚。
+
+### 8.6 安全能力附魔
+
+Guard Model 微调与安全能力附魔是两条不同训练路径：
+
+- Guard Model 微调：训练 TraceHound/AgentDoG-style guard，让它更准确地判断 agent trajectory 是否安全。
+- 安全能力附魔：固定或调用当前 Guard Model，把它作为 data filter、semantic judge、safety reward，用于微调另一个 target policy/base model，使目标模型本身更倾向于安全行为。
+
+附魔流程参考 AgentDoG APP1 的 SFT/RL 思路：
+
+```text
+1. 用 Guard 过滤高质量安全轨迹，导出 target-model SFT 数据。
+2. 对 target base model 运行 LoRA/QLoRA SFT。
+3. 对边界样本构造 chosen/rejected，运行 DPO/ORPO。
+4. 若有环境 utility score，则将 Guard safety score 作为 RL/GRPO reward 的安全项。
+```
+
+奖励组合保留 AgentDoG-style 公式骨架：
+
+```text
+normal benign:   U
+attacked benign: 0.5 * U + 0.25 * S + 0.25 * U * S
+malicious:       S
+```
+
+其中 `U` 是任务效用或环境成功分，`S` 是当前 Guard Model 给出的安全分或安全判定。该模块默认只生成训练计划和命令；本机无 GPU 时不启动训练，Linux/GPU 服务器上再加 `--run` 执行。
 
 ---
 
@@ -806,18 +839,25 @@ Web demo 建议采用工程化安全控制台风格，不做营销首页。
 1. Trajectory 输入区  
    支持粘贴 JSON、上传 JSONL、选择内置案例。
 
-2. Model 控制区  
-   选择：
-   - `base`
-   - `SFT`
-   - `SFT+DPO/RL`
+2. Guard Model 调配区
+   展示：
+   - 当前 Guard 使用方式：模型 API / 本地部署。
+   - 训练 Guard Model 的 SFT / SFT+DPO/RL 预检入口。
+   - 数据生成、质量报告与模型切换。
 
    选择推理模式：
    - `full`
    - `compressed`
    - `layered`
 
-3. Risk Report 区  
+3. 安全能力附魔区
+   展示：
+   - 当前 Guard Model。
+   - target policy/base model profile。
+   - `Guard SFT` / `SFT+DPO` / `SFT+GRPO` 训练计划。
+   - 可复制的远程 GPU 训练命令。
+
+4. Risk Report 区
    展示：
    - Safe/Unsafe。
    - decision。
@@ -826,10 +866,10 @@ Web demo 建议采用工程化安全控制台风格，不做营销首页。
    - harm_type。
    - confidence。
 
-4. Evidence 可视化区  
+5. Evidence 可视化区
    按 step 高亮导致 unsafe 的 user/tool/action/observation。
 
-5. Cost 面板  
+6. Cost 面板
    展示：
    - input tokens。
    - output tokens。
@@ -838,7 +878,7 @@ Web demo 建议采用工程化安全控制台风格，不做营销首页。
    - compression ratio。
    - cost reduction ratio。
 
-6. Online Guard 模拟区  
+7. Online Guard 模拟区
    展示 Agent 执行流程，在高风险工具调用前被 TraceHound 拦截。
 
 ### 12.3 内置 Demo 案例
@@ -1076,6 +1116,7 @@ SFT 和 DPO/RL 作为次优先级。
 - `scripts/evaluate.py`：评测入口。
 - `scripts/train_sft.py`：SFT 训练入口。
 - `scripts/train_preference.py`：DPO/ORPO 训练入口，可选。
+- `scripts/enchant_safety.py`：用当前 Guard Model 给目标模型做安全能力附魔的计划/训练入口。
 - `web_demo/`：Demo 页面。
 - `examples/`：内置案例。
 - `reports/`：实验结果与图表。

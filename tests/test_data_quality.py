@@ -1,7 +1,9 @@
 import json
 
 from traceguard.data import TOOL_SCENARIOS, built_in_cases, dataset_summary
-from traceguard.quality import quality_check_jsonl
+from traceguard.export import agentdog_binary_sft_rows, agentdog_taxonomy_sft_rows
+from traceguard.quality import filter_cases_by_agentdog_qc, quality_check_jsonl
+from traceguard.taxonomy import FAILURE_MODES, HARM_TYPES, RISK_SOURCES
 
 
 def test_built_in_cases_cover_tool_scenarios_and_labels():
@@ -17,7 +19,39 @@ def test_scaled_generation_uses_unique_variant_ids():
     cases = built_in_cases(count=100)
     assert len(cases) == 100
     assert len({case["id"] for case in cases}) == 100
-    assert cases[-1]["metadata"]["generated"] is True
+    assert cases[-1]["metadata"]["generation_flow"] == "agentdog_three_stage_planner"
+
+
+def test_agentdog_generation_covers_full_taxonomy_when_scaled():
+    cases = built_in_cases(count=2240, labels=["unsafe"])
+    risk_sources = {case["gold"]["risk_source"] for case in cases}
+    failure_modes = {case["gold"]["failure_mode"] for case in cases}
+    harm_types = {case["gold"]["harm_type"] for case in cases}
+    assert risk_sources == set(RISK_SOURCES)
+    assert failure_modes == set(FAILURE_MODES)
+    assert harm_types == set(HARM_TYPES)
+    assert all(case["metadata"]["tool_library_size"] >= 10000 for case in cases)
+    assert all(case["metadata"]["execution_plan"]["risk_injection_point"] for case in cases)
+
+
+def test_small_agentdog_generation_diversifies_taxonomy_axes():
+    cases = built_in_cases(count=10)
+    unsafe = [case for case in cases if case["gold"]["label"] == "unsafe"]
+    assert len(unsafe) == 5
+    assert len({case["gold"]["risk_source"] for case in unsafe}) > 1
+    assert len({case["gold"]["failure_mode"] for case in unsafe}) > 1
+    assert len({case["gold"]["harm_type"] for case in unsafe}) > 1
+
+
+def test_agentdog_sft_exports_binary_and_taxonomy_rows():
+    cases = built_in_cases(count=4)
+    binary_rows = list(agentdog_binary_sft_rows(cases))
+    taxonomy_rows = list(agentdog_taxonomy_sft_rows(cases))
+    assert len(binary_rows) == 4
+    assert len(taxonomy_rows) == 4
+    assert binary_rows[0]["task_type"] == "trajectory_level_safety_evaluation"
+    assert taxonomy_rows[0]["task_type"] == "fine_grained_risk_diagnosis"
+    assert "Risk Source:" in taxonomy_rows[0]["messages"][-1]["content"]
 
 
 def test_quality_check_accepts_generated_cases(tmp_path):
@@ -30,3 +64,17 @@ def test_quality_check_accepts_generated_cases(tmp_path):
     assert result["passed"] is True
     assert result["errors"] == []
     assert result["warnings"] == []
+    assert result["agentdog_qc"]["pass_rate"] == 1.0
+
+
+def test_agentdog_qc_rejects_invalid_tool_sample():
+    case = built_in_cases(count=1, labels=["unsafe"])[0]
+    bad = json.loads(json.dumps(case))
+    bad["trajectory"][1]["tool_name"] = "unknown_tool.run"
+
+    kept, report = filter_cases_by_agentdog_qc([bad])
+
+    assert kept == []
+    assert report["pass_rate"] == 0.0
+    assert report["rejected_samples"]
+    assert "unknown tool" in " ".join(report["rejected_samples"][0]["errors"])

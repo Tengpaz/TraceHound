@@ -1,23 +1,23 @@
-# TraceHound synthetic data generation defaults.
-# Keep this dependency-free YAML subset simple: scalar values and inline lists only.
+# AgentDoG-consistent generation preset.
+# Requires TRACEHOUND_API_BASE / TRACEHOUND_API_KEY / TRACEHOUND_MODEL.
 
-out: data/tmp/generated_from_config
+out: data/tmp/generated_agentdog_llm
 count: 10000
 limit:
 scenarios: [all]
 labels: [all]
-generation_backend: deterministic
+generation_backend: llm
 include_eval: true
 include_sft: true
 include_agentdog_sft: true
 include_agentdog15_official_sft: true
 include_preference: true
 include_rl: true
-qc_policy: agentdog_local
-llm_qc: false
+qc_policy: agentdog_strict
+llm_qc: true
 llm_generation_retries: 2
 llm_generation_temperature: 0.2
-semantic_repair_backend: static
+semantic_repair_backend: llm
 semantic_repair_rounds: 1
 llm_qc_judge: api
 llm_qc_judges: []

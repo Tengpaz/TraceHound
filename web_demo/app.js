@@ -15,6 +15,7 @@ const batchRunBtn = $("#batchRunBtn");
 let currentCase = null;
 let runtimeInfo = null;
 let modelInfo = null;
+let enchantmentInfo = null;
 let uploadedCases = [];
 let language = "zh";
 
@@ -66,16 +67,20 @@ const copy = {
     "nav.home": "主页",
     "nav.evaluate": "Agent轨迹安全评估",
     "nav.model": "Guard Model调配",
+    "nav.enchant": "安全能力附魔",
     "home.slogan": "让每一次 Agent 行动都留下可审计的安全证据",
     "home.meta": "AgentDoG taxonomy · CPU-first baseline · API validation · local model training hooks",
     "home.startEval": "开始评估",
     "home.openModel": "模型调配",
+    "home.openEnchant": "安全附魔",
     "home.panel1.title": "轨迹级诊断",
     "home.panel1.body": "从用户目标、工具调用、外部 observation、最终回答中抽取风险证据。",
     "home.panel2.title": "低算力优先",
     "home.panel2.body": "默认离线规则与压缩启发式，可接入第三方 API，不强依赖 GPU。",
     "home.panel3.title": "赛前可调配",
     "home.panel3.body": "支持大规模数据生成、训练预检、模型运行方式切换和报告输出。",
+    "home.panel4.title": "安全能力附魔",
+    "home.panel4.body": "用当前 Guard Model 过滤、打分和奖励其他基座模型，生成更安全的策略模型。",
     "eval.title": "Agent轨迹安全评估",
     "eval.case": "案例",
     "eval.mode": "模式",
@@ -135,6 +140,19 @@ const copy = {
     "model.dataGenHint": "支持 10K 级合成轨迹导出",
     "model.config": "配置文件",
     "model.scale": "生成规模",
+    "model.genBackend": "生成后端",
+    "model.backendDeterministic": "本地 Planner",
+    "model.backendLlm": "LLM 轨迹生成",
+    "model.semanticRepair": "语义修复",
+    "model.repairLlm": "LLM self-repair",
+    "model.repairNone": "不修复",
+    "model.repairStatic": "本地兜底",
+    "model.repairHybrid": "LLM 后本地兜底",
+    "model.repairRounds": "修复轮数",
+    "model.backend": "后端",
+    "model.currentCase": "当前样本",
+    "model.completedCases": "已完成",
+    "model.rejectedCases": "失败/拒收",
     "model.scenario": "场景",
     "model.label": "标签",
     "model.evalSet": "评测集",
@@ -145,6 +163,9 @@ const copy = {
     "model.generationStatus": "生成状态",
     "model.output": "输出目录",
     "model.evalArtifact": "评测集",
+    "model.qualityReport": "质量报告",
+    "model.rejectedSamples": "拒收样本",
+    "model.trainingRejected": "训练过滤样本",
     "model.training": "本地微调训练",
     "model.localOnly": "仅本地部署模式可用",
     "model.rlAlgorithm": "RL 算法",
@@ -157,6 +178,30 @@ const copy = {
     "model.noFineTuned": "尚未注册微调模型",
     "model.switch": "切换",
     "model.trainerMissing": "缺少可选依赖",
+    "enchant.title": "安全能力附魔",
+    "enchant.guardTitle": "当前 Guard Model",
+    "enchant.guardHint": "作为数据过滤器、语义 judge 和安全 reward",
+    "enchant.roles": "训练角色",
+    "enchant.roleList": "过滤 / 判定 / 奖励",
+    "enchant.rewardFormula": "AgentDoG-style 奖励",
+    "enchant.normalBenign": "普通良性",
+    "enchant.attackedBenign": "被攻击良性",
+    "enchant.malicious": "恶意任务",
+    "enchant.configTitle": "目标模型训练设定",
+    "enchant.configHint": "对其他 policy/base model 做安全蒸馏或 RL 对齐",
+    "enchant.targetProfile": "目标模型 Profile",
+    "enchant.algorithm": "训练方式",
+    "enchant.maxSamples": "样本上限",
+    "enchant.targetBase": "目标基座模型",
+    "enchant.safetyWeight": "安全权重",
+    "enchant.utilityWeight": "效用权重",
+    "enchant.autoRegister": "完成后登记附魔模型",
+    "enchant.run": "运行安全能力附魔",
+    "enchant.jobTitle": "附魔任务状态",
+    "enchant.plan": "训练计划",
+    "enchant.modelsTitle": "已附魔目标模型",
+    "enchant.modelsHint": "这些是被 Guard 迁移安全能力后的 policy/base model",
+    "enchant.noModels": "尚未登记附魔模型",
   },
   en: {
     "common.checkingApi": "Checking API",
@@ -191,16 +236,20 @@ const copy = {
     "nav.home": "Home",
     "nav.evaluate": "Agent Trace Safety",
     "nav.model": "Guard Model Ops",
+    "nav.enchant": "Safety Enchantment",
     "home.slogan": "Auditable safety evidence for every agent action",
     "home.meta": "AgentDoG taxonomy · CPU-first baseline · API validation · local model training hooks",
     "home.startEval": "Start Evaluation",
     "home.openModel": "Model Ops",
+    "home.openEnchant": "Safety Enchant",
     "home.panel1.title": "Trajectory Diagnosis",
     "home.panel1.body": "Extract risk evidence from goals, tool calls, observations, and final answers.",
     "home.panel2.title": "Low Compute First",
     "home.panel2.body": "Offline rules and compression heuristics by default, with optional third-party API validation.",
     "home.panel3.title": "Contest Ready",
     "home.panel3.body": "Large-scale data export, training preflight, model switching, and experiment reports.",
+    "home.panel4.title": "Safety Enchantment",
+    "home.panel4.body": "Use the current Guard Model to filter, score, and reward other base models.",
     "eval.title": "Agent Trace Safety Evaluation",
     "eval.case": "Case",
     "eval.mode": "Mode",
@@ -260,6 +309,19 @@ const copy = {
     "model.dataGenHint": "10K-ready synthetic trajectory export",
     "model.config": "Config",
     "model.scale": "Scale",
+    "model.genBackend": "Generation Backend",
+    "model.backendDeterministic": "Local Planner",
+    "model.backendLlm": "LLM Trajectory",
+    "model.semanticRepair": "Semantic Repair",
+    "model.repairLlm": "LLM self-repair",
+    "model.repairNone": "None",
+    "model.repairStatic": "Local fallback",
+    "model.repairHybrid": "LLM then local",
+    "model.repairRounds": "Repair Rounds",
+    "model.backend": "Backend",
+    "model.currentCase": "Current Case",
+    "model.completedCases": "Completed",
+    "model.rejectedCases": "Rejected",
     "model.scenario": "Scenario",
     "model.label": "Label",
     "model.evalSet": "Eval set",
@@ -270,6 +332,9 @@ const copy = {
     "model.generationStatus": "Generation Status",
     "model.output": "Output",
     "model.evalArtifact": "Eval",
+    "model.qualityReport": "Quality report",
+    "model.rejectedSamples": "Rejected samples",
+    "model.trainingRejected": "Training filtered",
     "model.training": "Local Fine-tuning",
     "model.localOnly": "Local deployment only",
     "model.rlAlgorithm": "RL Algorithm",
@@ -282,6 +347,30 @@ const copy = {
     "model.noFineTuned": "No fine-tuned model registered",
     "model.switch": "Switch",
     "model.trainerMissing": "missing optional deps",
+    "enchant.title": "Safety Enchantment",
+    "enchant.guardTitle": "Current Guard Model",
+    "enchant.guardHint": "Used as data filter, semantic judge, and safety reward",
+    "enchant.roles": "Training Roles",
+    "enchant.roleList": "filter / judge / reward",
+    "enchant.rewardFormula": "AgentDoG-style Reward",
+    "enchant.normalBenign": "Normal benign",
+    "enchant.attackedBenign": "Attacked benign",
+    "enchant.malicious": "Malicious task",
+    "enchant.configTitle": "Target Model Training",
+    "enchant.configHint": "Safety distillation or RL alignment for another policy/base model",
+    "enchant.targetProfile": "Target Profile",
+    "enchant.algorithm": "Training Method",
+    "enchant.maxSamples": "Max Samples",
+    "enchant.targetBase": "Target Base Model",
+    "enchant.safetyWeight": "Safety Weight",
+    "enchant.utilityWeight": "Utility Weight",
+    "enchant.autoRegister": "Register enchanted model",
+    "enchant.run": "Run Safety Enchantment",
+    "enchant.jobTitle": "Enchantment Job",
+    "enchant.plan": "Training Plan",
+    "enchant.modelsTitle": "Enchanted Target Models",
+    "enchant.modelsHint": "Policy/base models improved by transferring guard safety.",
+    "enchant.noModels": "No enchanted models registered",
   },
 };
 
@@ -356,10 +445,13 @@ function applyLanguage() {
   if (modelInfo) {
     renderModel(modelInfo);
   }
+  if (enchantmentInfo) {
+    renderEnchantmentStatus(enchantmentInfo);
+  }
 }
 
 function showPage(pageName) {
-  const resolved = ["home", "evaluate", "model"].includes(pageName) ? pageName : "home";
+  const resolved = ["home", "evaluate", "model", "enchant"].includes(pageName) ? pageName : "home";
   $$(".page").forEach((page) => page.classList.remove("active"));
   $(`#${resolved}Page`).classList.add("active");
   $$(".nav-tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.page === resolved));
@@ -369,6 +461,9 @@ function showPage(pageName) {
   window.scrollTo(0, 0);
   if (resolved === "model") {
     refreshModelStatus().catch(console.error);
+  }
+  if (resolved === "enchant") {
+    refreshEnchantmentStatus().catch(console.error);
   }
 }
 
@@ -406,6 +501,7 @@ function renderRuntime(info) {
   if (info.model) {
     renderModel(info.model);
   }
+  populateTargetProfiles(info.model_profiles || []);
 }
 
 function renderResult(result) {
@@ -527,6 +623,34 @@ function scenarioLabel(scenario) {
   return scenarioLabels[language][scenario] || scenario;
 }
 
+function generationStatusLabel(status) {
+  const labels = {
+    zh: {
+      starting: "启动中",
+      running: "准备样本",
+      requesting: "请求 LLM",
+      validating: "校验输出",
+      retrying: "重试生成",
+      repairing: "LLM 自修复",
+      accepted: "已接收",
+      rejected: "已拒收",
+      completed: "完成",
+    },
+    en: {
+      starting: "Starting",
+      running: "Preparing",
+      requesting: "Requesting LLM",
+      validating: "Validating",
+      retrying: "Retrying",
+      repairing: "LLM Repair",
+      accepted: "Accepted",
+      rejected: "Rejected",
+      completed: "Completed",
+    },
+  };
+  return labels[language][status] || status || "-";
+}
+
 async function refreshModelStatus() {
   modelInfo = await fetchJson("/api/guard-model");
   renderModel(modelInfo);
@@ -550,6 +674,72 @@ function renderModel(info) {
   renderFineTunedModels(info.fine_tuned_models || []);
   populateScenarioOptions(info.scenarios || []);
   syncLocalControls();
+  renderEnchantmentGuard(info);
+}
+
+async function refreshEnchantmentStatus() {
+  enchantmentInfo = await fetchJson("/api/safety-enchantment");
+  renderEnchantmentStatus(enchantmentInfo);
+}
+
+function renderEnchantmentStatus(info) {
+  enchantmentInfo = info;
+  const guard = info.guard || modelInfo || {};
+  renderEnchantmentGuard(guard);
+  populateTargetProfiles(info.model_profiles || runtimeInfo?.model_profiles || []);
+  renderEnchantedModels(info.enchanted_models || []);
+  const pill = $("#enchantStatusPill");
+  if (pill) {
+    pill.classList.remove("ready", "warn", "missing");
+    pill.textContent = guard.current_model ? t("common.ready") : t("common.notConfigured");
+    pill.classList.add(guard.current_model ? "ready" : "warn");
+  }
+  const formula = info.reward_formula || {};
+  setText("#formulaNormal", formula.normal_benign || "U");
+  setText("#formulaAttacked", formula.attacked_benign || "0.5 * U + 0.25 * S + 0.25 * U * S");
+  setText("#formulaMalicious", formula.malicious || "S");
+}
+
+function renderEnchantmentGuard(info) {
+  if (!$("#enchantGuardModel")) {
+    return;
+  }
+  setText("#enchantGuardModel", info?.current_model || "-");
+  setText("#enchantGuardMode", info?.serving_type === "model_api" ? t("model.apiMode") : t("model.localMode"));
+}
+
+function populateTargetProfiles(profiles) {
+  const select = $("#targetProfileSelect");
+  if (!select) {
+    return;
+  }
+  const current = select.value;
+  const localProfiles = (profiles || []).filter((profile) => profile.provider === "huggingface");
+  if (!localProfiles.length) {
+    return;
+  }
+  select.innerHTML = "";
+  for (const profile of localProfiles) {
+    const option = document.createElement("option");
+    option.value = profile.name;
+    option.textContent = `${profile.name} · ${profile.role || profile.family || ""}`.trim();
+    option.dataset.modelId = profile.model_id || "";
+    select.append(option);
+  }
+  if (current && localProfiles.some((profile) => profile.name === current)) {
+    select.value = current;
+  }
+  syncTargetBasePlaceholder();
+}
+
+function syncTargetBasePlaceholder() {
+  const select = $("#targetProfileSelect");
+  const input = $("#targetBaseModel");
+  if (!select || !input) {
+    return;
+  }
+  const selected = select.selectedOptions[0];
+  input.placeholder = selected?.dataset.modelId || "profile default";
 }
 
 function syncModelNameField(info = modelInfo) {
@@ -625,6 +815,23 @@ function renderFineTunedModels(models) {
   }
 }
 
+function renderEnchantedModels(models) {
+  const panel = $("#enchantedModelsPanel");
+  const target = $("#enchantedModels");
+  if (!panel || !target) {
+    return;
+  }
+  target.innerHTML = "";
+  setVisible("#enchantedModelsPanel", models.length > 0);
+  for (const model of models) {
+    const item = document.createElement("article");
+    const label = document.createElement("span");
+    label.textContent = `${model.id} · ${model.target_profile || model.algorithm} · ${model.path || ""}`;
+    item.append(label);
+    target.append(item);
+  }
+}
+
 async function startDataGeneration() {
   const mode = $("#deploymentModeSelect").value;
   const includeSft = mode === "local" && $("#includeSft").checked;
@@ -633,6 +840,9 @@ async function startDataGeneration() {
   const label = $("#genLabel").value;
   const job = await postJson("/api/data-generation", {
     count: Number($("#genCount").value || 10000),
+    generation_backend: $("#genBackend").value,
+    semantic_repair_backend: $("#semanticRepairBackend").value,
+    semantic_repair_rounds: Number($("#semanticRepairRounds").value || 1),
     scenarios: scenario === "all" ? [] : [scenario],
     labels: label === "all" ? [] : [label],
     config_path: $("#genConfigPath").value || undefined,
@@ -650,6 +860,15 @@ async function loadGenerationConfig() {
   const config = response.config || {};
   if (config.count) {
     $("#genCount").value = config.count;
+  }
+  if (config.generation_backend) {
+    $("#genBackend").value = config.generation_backend;
+  }
+  if (config.semantic_repair_backend) {
+    $("#semanticRepairBackend").value = config.semantic_repair_backend;
+  }
+  if (config.semantic_repair_rounds !== undefined && config.semantic_repair_rounds !== null) {
+    $("#semanticRepairRounds").value = config.semantic_repair_rounds;
   }
   if (Array.isArray(config.scenarios) && config.scenarios.length === 1) {
     $("#genScenario").value = config.scenarios[0];
@@ -766,6 +985,25 @@ async function startTraining(kind) {
   });
 }
 
+async function startSafetyEnchantment() {
+  const maxSamples = Number($("#enchantMaxSamples").value || 0);
+  const job = await postJson("/api/safety-enchantment", {
+    algorithm: $("#enchantAlgorithm").value,
+    target_model_profile: $("#targetProfileSelect").value,
+    target_base_model: $("#targetBaseModel").value || undefined,
+    data_dir: $("#enchantDataDir").value,
+    output_dir: $("#enchantOutputDir").value,
+    max_samples: maxSamples > 0 ? maxSamples : undefined,
+    safety_weight: Number($("#safetyWeight").value || 0.5),
+    utility_weight: Number($("#utilityWeight").value || 0.5),
+    auto_register: $("#autoRegisterEnchant").checked,
+  });
+  renderEnchantmentJob(job);
+  pollJob(job.id, renderEnchantmentJob, async () => {
+    await refreshEnchantmentStatus();
+  });
+}
+
 async function pollJob(jobId, render, onDone) {
   let done = false;
   while (!done) {
@@ -785,12 +1023,24 @@ function renderGenerationJob(job) {
   const progress = Number(job.progress || 0);
   setVisible("#jobProgressTrack", progress > 0);
   $("#jobProgressBar").style.width = `${progress}%`;
+  renderGenerationLiveStats(job.synthesis || null);
   renderMessages("#jobMessages", job.messages || []);
   const artifacts = job.artifacts || {};
-  const hasArtifacts = Boolean(artifacts.output_dir || artifacts.eval || artifacts.sft || artifacts.rl);
+  const hasArtifacts = Boolean(
+    artifacts.output_dir ||
+      artifacts.eval ||
+      artifacts.quality_report ||
+      artifacts.rejected ||
+      artifacts.training_rejected ||
+      artifacts.sft ||
+      artifacts.rl,
+  );
   setVisible("#artifactList", hasArtifacts);
   setText("#artifactOutput", artifacts.output_dir || "-");
   setText("#artifactEval", artifacts.eval || "-");
+  setText("#artifactQuality", artifacts.quality_report || "-");
+  setText("#artifactRejected", artifacts.rejected || "-");
+  setText("#artifactTrainingRejected", artifacts.training_rejected || "-");
   setText("#artifactSft", artifacts.sft || "-");
   setText("#artifactRl", artifacts.rl || "-");
   if (artifacts.output_dir) {
@@ -798,11 +1048,56 @@ function renderGenerationJob(job) {
   }
 }
 
+function renderGenerationLiveStats(synthesis) {
+  const visible = Boolean(synthesis && synthesis.backend);
+  setVisible("#generationLiveStats", visible);
+  if (!visible) {
+    return;
+  }
+  const attempt = synthesis.attempt ? (language === "zh" ? ` · 第 ${synthesis.attempt} 次` : ` · attempt ${synthesis.attempt}`) : "";
+  setText("#genLiveBackend", `${synthesis.backend || "-"} · ${generationStatusLabel(synthesis.status)}${attempt}`);
+  const total = synthesis.total || 0;
+  const current = synthesis.current || 0;
+  const caseId = synthesis.case_id ? ` · ${synthesis.case_id}` : "";
+  setText("#genLiveCurrent", total ? `${current}/${total}${caseId}` : "-");
+  setText("#genLiveCompleted", synthesis.completed ?? 0);
+  setText("#genLiveRejected", synthesis.rejected ?? 0);
+}
+
 function renderTrainingJob(job) {
   const progress = Number(job.progress || 0);
   setVisible("#trainProgressTrack", progress > 0);
   $("#trainProgressBar").style.width = `${progress}%`;
   renderMessages("#trainingMessages", job.messages || []);
+}
+
+function renderEnchantmentJob(job) {
+  setVisible("#enchantJobPanel", true);
+  setText("#enchantJobStep", `${job.status} · ${job.step}`);
+  const progress = Number(job.progress || 0);
+  setVisible("#enchantProgressTrack", progress > 0);
+  $("#enchantProgressBar").style.width = `${progress}%`;
+  renderMessages("#enchantMessages", job.messages || []);
+  const artifacts = job.artifacts || {};
+  const hasArtifacts = Boolean(artifacts.output_dir || artifacts.plan || (artifacts.commands || []).length);
+  setVisible("#enchantArtifactList", hasArtifacts);
+  setText("#enchantArtifactOutput", artifacts.output_dir || "-");
+  setText("#enchantArtifactPlan", artifacts.plan || "-");
+  renderCommandList(artifacts.commands || []);
+}
+
+function renderCommandList(commands) {
+  const target = $("#enchantCommandList");
+  if (!target) {
+    return;
+  }
+  target.innerHTML = "";
+  target.classList.toggle("is-hidden", !commands.length);
+  for (const command of commands) {
+    const line = document.createElement("code");
+    line.textContent = command;
+    target.append(line);
+  }
 }
 
 function renderMessages(selector, messages) {
@@ -894,6 +1189,16 @@ $("#runSftBtn").addEventListener("click", () => startTraining("sft").catch((erro
 $("#runSftRlBtn").addEventListener("click", () =>
   startTraining("sft_rl").catch((error) => renderMessages("#trainingMessages", [error.message])),
 );
+$("#targetProfileSelect").addEventListener("change", syncTargetBasePlaceholder);
+$("#runEnchantBtn").addEventListener("click", () => {
+  $("#runEnchantBtn").disabled = true;
+  setVisible("#enchantJobPanel", true);
+  startSafetyEnchantment()
+    .catch((error) => renderMessages("#enchantMessages", [error.message]))
+    .finally(() => {
+      $("#runEnchantBtn").disabled = false;
+    });
+});
 
 dropZone.addEventListener("click", () => jsonUpload.click());
 dropZone.addEventListener("keydown", (event) => {
@@ -927,6 +1232,7 @@ applyLanguage();
 showPage(location.hash.replace("#", "") || "home");
 loadCases()
   .then(refreshModelStatus)
+  .then(refreshEnchantmentStatus)
   .catch((error) => {
     setStatus(t("common.error"));
     console.error(error);

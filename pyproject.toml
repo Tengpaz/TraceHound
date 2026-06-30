@@ -27,6 +27,9 @@ preference = [
   "datasets>=2.20",
   "trl>=0.9",
 ]
+official = [
+  "huggingface_hub>=0.24",
+]
 qlora = [
   "bitsandbytes>=0.42; platform_system == 'Linux'",
 ]
@@ -40,7 +43,9 @@ tracehound-quality = "scripts.quality_check:main"
 tracehound-experiments = "scripts.run_experiments:main"
 tracehound-report = "scripts.generate_report:main"
 tracehound-convert = "scripts.convert_dataset:main"
+tracehound-agentdog-official = "scripts.prepare_agentdog_official:main"
 tracehound-model-profiles = "scripts.list_model_profiles:main"
+tracehound-enchant-safety = "scripts.enchant_safety:main"
 
 [tool.setuptools]
 packages = ["traceguard", "scripts"]

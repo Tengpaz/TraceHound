@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>TraceHound</title>
-    <link rel="stylesheet" href="/static/styles.css?v=empty-state-v5" />
+    <link rel="stylesheet" href="/static/styles.css?v=production-v1" />
   </head>
   <body>
     <div class="backdrop" aria-hidden="true"></div>
@@ -17,6 +17,7 @@
         <button class="nav-tab active" type="button" data-page="home" data-i18n="nav.home">主页</button>
         <button class="nav-tab" type="button" data-page="evaluate" data-i18n="nav.evaluate">Agent轨迹安全评估</button>
         <button class="nav-tab" type="button" data-page="model" data-i18n="nav.model">Guard Model调配</button>
+        <button class="nav-tab" type="button" data-page="enchant" data-i18n="nav.enchant">安全能力附魔</button>
       </div>
       <button id="langToggle" class="ghost-button lang-toggle" type="button">EN</button>
     </nav>
@@ -35,6 +36,7 @@
             <div class="hero-actions">
               <button class="primary-button" type="button" data-go="evaluate" data-i18n="home.startEval">开始评估</button>
               <button class="secondary-button" type="button" data-go="model" data-i18n="home.openModel">模型调配</button>
+              <button class="secondary-button" type="button" data-go="enchant" data-i18n="home.openEnchant">安全附魔</button>
             </div>
           </section>
           <section class="signal-board" aria-label="TraceHound telemetry">
@@ -70,6 +72,10 @@
           <article class="glass-panel">
             <h2 data-i18n="home.panel3.title">赛前可调配</h2>
             <p data-i18n="home.panel3.body">支持大规模数据生成、训练预检、模型运行方式切换和报告输出。</p>
+          </article>
+          <article class="glass-panel">
+            <h2 data-i18n="home.panel4.title">安全能力附魔</h2>
+            <p data-i18n="home.panel4.body">用当前 Guard Model 过滤、打分和奖励其他基座模型，生成更安全的策略模型。</p>
           </article>
         </section>
       </section>
@@ -306,6 +312,26 @@
                 <input id="genCount" type="number" min="1" max="50000" step="1000" value="10000" />
               </label>
               <label>
+                <span data-i18n="model.genBackend">生成后端</span>
+                <select id="genBackend">
+                  <option value="deterministic" data-i18n="model.backendDeterministic">本地 Planner</option>
+                  <option value="llm" data-i18n="model.backendLlm">LLM 轨迹生成</option>
+                </select>
+              </label>
+              <label>
+                <span data-i18n="model.semanticRepair">语义修复</span>
+                <select id="semanticRepairBackend">
+                  <option value="llm" data-i18n="model.repairLlm">LLM self-repair</option>
+                  <option value="none" data-i18n="model.repairNone">不修复</option>
+                  <option value="static" data-i18n="model.repairStatic">本地兜底</option>
+                  <option value="llm_then_static" data-i18n="model.repairHybrid">LLM 后本地兜底</option>
+                </select>
+              </label>
+              <label>
+                <span data-i18n="model.repairRounds">修复轮数</span>
+                <input id="semanticRepairRounds" type="number" min="0" max="5" step="1" value="1" />
+              </label>
+              <label>
                 <span data-i18n="model.scenario">场景</span>
                 <select id="genScenario">
                   <option value="all" data-i18n="common.all">全部</option>
@@ -336,12 +362,36 @@
               </div>
             </div>
             <div id="jobProgressTrack" class="progress-track is-hidden"><span id="jobProgressBar"></span></div>
+            <div id="generationLiveStats" class="live-stats is-hidden">
+              <article>
+                <span data-i18n="model.backend">后端</span>
+                <strong id="genLiveBackend">-</strong>
+              </article>
+              <article>
+                <span data-i18n="model.currentCase">当前样本</span>
+                <strong id="genLiveCurrent">-</strong>
+              </article>
+              <article>
+                <span data-i18n="model.completedCases">已完成</span>
+                <strong id="genLiveCompleted">-</strong>
+              </article>
+              <article>
+                <span data-i18n="model.rejectedCases">失败/拒收</span>
+                <strong id="genLiveRejected">-</strong>
+              </article>
+            </div>
             <div id="jobMessages" class="job-log is-hidden"></div>
             <dl id="artifactList" class="dense-dl artifact-dl is-hidden">
               <dt data-i18n="model.output">输出目录</dt>
               <dd id="artifactOutput">-</dd>
               <dt data-i18n="model.evalArtifact">评测集</dt>
               <dd id="artifactEval">-</dd>
+              <dt data-i18n="model.qualityReport">质量报告</dt>
+              <dd id="artifactQuality">-</dd>
+              <dt data-i18n="model.rejectedSamples">拒收样本</dt>
+              <dd id="artifactRejected">-</dd>
+              <dt data-i18n="model.trainingRejected">训练过滤样本</dt>
+              <dd id="artifactTrainingRejected">-</dd>
               <dt>SFT</dt>
               <dd id="artifactSft">-</dd>
               <dt>RL</dt>
@@ -381,7 +431,123 @@
           </section>
         </section>
       </section>
+
+      <section id="enchantPage" class="page">
+        <header class="page-heading">
+          <div>
+            <p class="eyebrow">SAFETY ENCHANTMENT</p>
+            <h1 data-i18n="enchant.title">安全能力附魔</h1>
+          </div>
+          <span id="enchantStatusPill" class="status-pill" data-i18n="common.loading">加载中</span>
+        </header>
+
+        <section class="enchant-layout">
+          <section class="panel enchant-guard-panel">
+            <div class="panel-heading">
+              <div>
+                <h2 data-i18n="enchant.guardTitle">当前 Guard Model</h2>
+                <p data-i18n="enchant.guardHint">作为数据过滤器、语义 judge 和安全 reward</p>
+              </div>
+            </div>
+            <div class="model-name compact-model-name" id="enchantGuardModel">-</div>
+            <dl class="dense-dl">
+              <dt data-i18n="model.mode">使用方式</dt>
+              <dd id="enchantGuardMode">-</dd>
+              <dt data-i18n="enchant.roles">训练角色</dt>
+              <dd data-i18n="enchant.roleList">过滤 / 判定 / 奖励</dd>
+            </dl>
+            <div class="formula-box">
+              <h2 data-i18n="enchant.rewardFormula">AgentDoG-style 奖励</h2>
+              <div class="formula-grid">
+                <span data-i18n="enchant.normalBenign">普通良性</span><strong id="formulaNormal">U</strong>
+                <span data-i18n="enchant.attackedBenign">被攻击良性</span><strong id="formulaAttacked">0.5U + 0.25S + 0.25US</strong>
+                <span data-i18n="enchant.malicious">恶意任务</span><strong id="formulaMalicious">S</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel enchant-config-panel">
+            <div class="panel-heading">
+              <div>
+                <h2 data-i18n="enchant.configTitle">目标模型训练设定</h2>
+                <p data-i18n="enchant.configHint">对其他 policy/base model 做安全蒸馏或 RL 对齐</p>
+              </div>
+            </div>
+            <div class="form-grid enchant-form-grid">
+              <label>
+                <span data-i18n="enchant.targetProfile">目标模型 Profile</span>
+                <select id="targetProfileSelect"></select>
+              </label>
+              <label>
+                <span data-i18n="enchant.algorithm">训练方式</span>
+                <select id="enchantAlgorithm">
+                  <option value="sft">Guard SFT</option>
+                  <option value="sft_dpo">SFT + DPO</option>
+                  <option value="sft_grpo">SFT + GRPO</option>
+                </select>
+              </label>
+              <label>
+                <span data-i18n="enchant.maxSamples">样本上限</span>
+                <input id="enchantMaxSamples" type="number" min="0" max="50000" step="1000" value="0" />
+              </label>
+              <label>
+                <span data-i18n="enchant.targetBase">目标基座模型</span>
+                <input id="targetBaseModel" type="text" placeholder="profile default" />
+              </label>
+              <label>
+                <span data-i18n="model.dataDir">数据目录</span>
+                <input id="enchantDataDir" type="text" value="data/tmp/generated/latest" />
+              </label>
+              <label>
+                <span data-i18n="model.output">输出目录</span>
+                <input id="enchantOutputDir" type="text" value="checkpoints/safety_enchantment" />
+              </label>
+              <label>
+                <span data-i18n="enchant.safetyWeight">安全权重</span>
+                <input id="safetyWeight" type="number" min="0" max="1" step="0.05" value="0.5" />
+              </label>
+              <label>
+                <span data-i18n="enchant.utilityWeight">效用权重</span>
+                <input id="utilityWeight" type="number" min="0" max="1" step="0.05" value="0.5" />
+              </label>
+              <label class="inline-check">
+                <input id="autoRegisterEnchant" type="checkbox" checked />
+                <span data-i18n="enchant.autoRegister">完成后登记附魔模型</span>
+              </label>
+            </div>
+            <button id="runEnchantBtn" class="primary-button wide-button" type="button" data-i18n="enchant.run">运行安全能力附魔</button>
+          </section>
+
+          <section id="enchantJobPanel" class="panel job-panel is-hidden">
+            <div class="panel-heading">
+              <div>
+                <h2 data-i18n="enchant.jobTitle">附魔任务状态</h2>
+                <p id="enchantJobStep" data-i18n="common.idle">空闲</p>
+              </div>
+            </div>
+            <div id="enchantProgressTrack" class="progress-track is-hidden"><span id="enchantProgressBar"></span></div>
+            <div id="enchantMessages" class="job-log is-hidden"></div>
+            <dl id="enchantArtifactList" class="dense-dl artifact-dl is-hidden">
+              <dt data-i18n="model.output">输出目录</dt>
+              <dd id="enchantArtifactOutput">-</dd>
+              <dt data-i18n="enchant.plan">训练计划</dt>
+              <dd id="enchantArtifactPlan">-</dd>
+            </dl>
+            <div id="enchantCommandList" class="command-list is-hidden"></div>
+          </section>
+
+          <section id="enchantedModelsPanel" class="panel is-hidden">
+            <div class="panel-heading">
+              <div>
+                <h2 data-i18n="enchant.modelsTitle">已附魔目标模型</h2>
+                <p data-i18n="enchant.modelsHint">这些是被 Guard 迁移安全能力后的 policy/base model</p>
+              </div>
+            </div>
+            <div id="enchantedModels" class="model-list"></div>
+          </section>
+        </section>
+      </section>
     </main>
-    <script src="/static/app.js?v=empty-state-v5"></script>
+    <script src="/static/app.js?v=production-v1"></script>
   </body>
 </html>
