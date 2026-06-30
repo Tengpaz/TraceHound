@@ -45,11 +45,13 @@ TRACEHOUND_SLURM_PARTITION=ai4safe
 TRACEHOUND_SLURM_GPUS=1
 TRACEHOUND_SLURM_NTASKS=1
 TRACEHOUND_SLURM_NTASKS_PER_NODE=1
-TRACEHOUND_SLURM_CPUS_PER_TASK=4
-TRACEHOUND_SLURM_MEM=64G
+TRACEHOUND_SLURM_CPUS_PER_TASK=
+TRACEHOUND_SLURM_MEM=
 TRACEHOUND_SLURM_JOB_NAME=TRACEHOUND
 TRACEHOUND_SLURM_LOG_DIR=log
 ```
+
+`TRACEHOUND_SLURM_CPUS_PER_TASK` and `TRACEHOUND_SLURM_MEM` are intentionally empty by default so the GPU smoke command matches the cluster tutorial exactly. Add them only for commands that need explicit CPU or memory resources.
 
 Values passed before the command override `.env`, so one-off resource changes are safe:
 
@@ -70,6 +72,7 @@ Set `TRACEHOUND_SLURM_GPUS=0` to omit `--gres=gpu:*`:
 
 ```bash
 TRACEHOUND_SLURM_GPUS=0 TRACEHOUND_SLURM_JOB_NAME=TH_EVAL \
+  TRACEHOUND_SLURM_CPUS_PER_TASK=1 TRACEHOUND_SLURM_MEM=4G \
   bash scripts/slurm_run.sh \
   'python scripts/evaluate.py data/tmp/remote_smoke/synthetic_eval.jsonl --mode layered'
 ```
