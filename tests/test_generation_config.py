@@ -26,6 +26,12 @@ def test_load_generation_config_from_yaml_subset(tmp_path):
                 "llm_qc_mode: compressed",
                 "llm_qc_consensus_threshold: 0.75",
                 "qc_min_score: 0.8",
+                "write_clean_layout: false",
+                "write_legacy_flat_files: false",
+                "split_train_ratio: 0.7",
+                "split_eval_ratio: 0.2",
+                "split_test_ratio: 0.1",
+                "split_seed: 42",
                 "write_qc_report: false",
                 "write_examples: true",
             ]
@@ -55,5 +61,11 @@ def test_load_generation_config_from_yaml_subset(tmp_path):
     assert config["llm_qc_mode"] == "compressed"
     assert config["llm_qc_consensus_threshold"] == 0.75
     assert config["qc_min_score"] == 0.8
+    assert config["write_clean_layout"] is False
+    assert config["write_legacy_flat_files"] is False
+    assert config["split_train_ratio"] == 0.7
+    assert config["split_eval_ratio"] == 0.2
+    assert config["split_test_ratio"] == 0.1
+    assert config["split_seed"] == 42
     assert config["write_qc_report"] is False
     assert config["write_examples"] is True

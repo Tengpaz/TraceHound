@@ -18,20 +18,9 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from traceguard.data import built_in_cases, dataset_summary
+from traceguard.data import built_in_cases
 from traceguard.config import load_env_file
-from traceguard.export import (
-    agentdog15_coarse_sft_rows,
-    agentdog15_unified_sft_rows,
-    agentdog_binary_sft_rows,
-    agentdog_taxonomy_sft_rows,
-    agentdog_unified_sft_rows,
-    eval_rows,
-    preference_rows,
-    rl_rows,
-    sft_rows,
-    write_jsonl,
-)
+from traceguard.dataset_layout import write_dataset_bundle
 from traceguard.generation_config import load_generation_config
 from traceguard.judge import build_remote_judge
 from traceguard.llm_generation import llm_synthesize_cases
@@ -75,6 +64,18 @@ def main() -> None:
     parser.add_argument("--api-path", help="Override TRACEHOUND_API_PATH for LLM generation/QC.")
     parser.add_argument("--timeout", type=int, help="Override TRACEHOUND_API_TIMEOUT for LLM generation/QC.")
     parser.add_argument("--include-rl", action="store_true", help="Also write synthetic_rl.jsonl for DPO/GRPO-style training.")
+    parser.add_argument(
+        "--clean-layout",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Write the structured cases/train/metadata layout. Defaults to config.",
+    )
+    parser.add_argument(
+        "--legacy-flat-files",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Write legacy root-level JSONL compatibility copies. Defaults to config.",
+    )
     parser.add_argument("--llm-qc", action="store_true", help="Run optional API judge semantic QC and filter mismatches.")
     parser.add_argument("--llm-qc-judge", action="append", help="Optional repeated judge spec, e.g. api or hybrid:model.")
     parser.add_argument(
@@ -151,6 +152,14 @@ def main() -> None:
     write_examples = bool(args.write_examples or config["write_examples"])
     qc_min_score = float(config["qc_min_score"])
     training_max_repair_level = str(config.get("training_max_repair_level") or "structural")
+    write_clean_layout = bool(config.get("write_clean_layout", True) if args.clean_layout is None else args.clean_layout)
+    write_legacy_flat_files = bool(
+        config.get("write_legacy_flat_files", True) if args.legacy_flat_files is None else args.legacy_flat_files
+    )
+    split_train_ratio = float(config.get("split_train_ratio", 0.8))
+    split_eval_ratio = float(config.get("split_eval_ratio", 0.1))
+    split_test_ratio = float(config.get("split_test_ratio", 0.1))
+    split_seed = int(config.get("split_seed", 20260701))
     semantic_repair_backend = args.semantic_repair_backend or str(config.get("semantic_repair_backend") or "static")
     semantic_repair_rounds = (
         args.semantic_repair_rounds
@@ -262,65 +271,42 @@ def main() -> None:
         "production": production_summary,
         "training_filter": training_filter,
     }
-    if write_qc_report:
-        (out / "quality_report.json").write_text(
-            json.dumps(qc_payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-            encoding="utf-8",
-        )
-        rejected_rows = deterministic_qc.get("rejected_samples", []) + llm_qc_summary.get("rejected_samples", [])
-        if rejected_rows:
-            with (out / "rejected_samples.jsonl").open("w", encoding="utf-8") as handle:
-                for item in rejected_rows:
-                    handle.write(json.dumps(item, ensure_ascii=False, sort_keys=True) + "\n")
-        else:
-            rejected_path = out / "rejected_samples.jsonl"
-            if rejected_path.exists():
-                rejected_path.unlink()
-        training_rejected = training_filter.get("rejected_samples") or []
-        if training_rejected:
-            with (out / "training_rejected_samples.jsonl").open("w", encoding="utf-8") as handle:
-                for item in training_rejected:
-                    handle.write(json.dumps(item, ensure_ascii=False, sort_keys=True) + "\n")
-        else:
-            training_rejected_path = out / "training_rejected_samples.jsonl"
-            if training_rejected_path.exists():
-                training_rejected_path.unlink()
     if not cases:
+        if write_qc_report:
+            _write_quality_report(out, qc_payload, deterministic_qc, llm_qc_summary, training_filter)
         raise SystemExit(
             "AgentDoG QC filtered out all generated cases. "
             f"Diagnostics written to {out / 'quality_report.json'} and {out / 'rejected_samples.jsonl'}"
         )
-    counts = {}
-    if include_eval:
-        counts["synthetic_eval.jsonl"] = write_jsonl(out / "synthetic_eval.jsonl", eval_rows(cases))
-    if include_sft:
-        counts["synthetic_sft.jsonl"] = write_jsonl(out / "synthetic_sft.jsonl", sft_rows(training_cases))
-    if include_agentdog_sft:
-        counts["agentdog_binary_sft.jsonl"] = write_jsonl(
-            out / "agentdog_binary_sft.jsonl",
-            agentdog_binary_sft_rows(training_cases),
-        )
-        counts["agentdog_taxonomy_sft.jsonl"] = write_jsonl(
-            out / "agentdog_taxonomy_sft.jsonl",
-            agentdog_taxonomy_sft_rows(training_cases),
-        )
-        counts["agentdog_unified_sft.jsonl"] = write_jsonl(
-            out / "agentdog_unified_sft.jsonl",
-            agentdog_unified_sft_rows(training_cases),
-        )
-    if include_agentdog15_official_sft:
-        counts["agentdog15_unified_sft.jsonl"] = write_jsonl(
-            out / "agentdog15_unified_sft.jsonl",
-            agentdog15_unified_sft_rows(training_cases),
-        )
-        counts["agentdog15_coarse_sft.jsonl"] = write_jsonl(
-            out / "agentdog15_coarse_sft.jsonl",
-            agentdog15_coarse_sft_rows(training_cases),
-        )
-    if include_preference:
-        counts["synthetic_preference.jsonl"] = write_jsonl(out / "synthetic_preference.jsonl", preference_rows(training_cases))
-    if include_rl:
-        counts["synthetic_rl.jsonl"] = write_jsonl(out / "synthetic_rl.jsonl", rl_rows(training_cases))
+    bundle = write_dataset_bundle(
+        out,
+        cases,
+        training_cases,
+        include_eval=include_eval,
+        include_sft=include_sft,
+        include_agentdog_sft=include_agentdog_sft,
+        include_agentdog15_official_sft=include_agentdog15_official_sft,
+        include_preference=include_preference,
+        include_rl=include_rl,
+        write_clean_layout=write_clean_layout,
+        write_legacy_flat_files=write_legacy_flat_files,
+        split_train_ratio=split_train_ratio,
+        split_eval_ratio=split_eval_ratio,
+        split_test_ratio=split_test_ratio,
+        split_seed=split_seed,
+        manifest_extra={
+            "config": {
+                "generation_backend": generation_backend,
+                "qc_policy": qc_policy,
+                "llm_qc": llm_qc,
+                "training_max_repair_level": training_max_repair_level,
+            }
+        },
+    )
+    qc_payload["coverage"] = bundle["coverage"]
+    qc_payload["splits"] = bundle["splits"]
+    if write_qc_report:
+        bundle["artifacts"].update(_write_quality_report(out, qc_payload, deterministic_qc, llm_qc_summary, training_filter))
     if write_examples:
         examples = Path("examples")
         examples.mkdir(parents=True, exist_ok=True)
@@ -330,15 +316,98 @@ def main() -> None:
         json.dumps(
             {
                 "output_dir": str(out),
-                "counts": counts,
-                "summary": dataset_summary(cases),
-                "training_summary": dataset_summary(training_cases),
-                "qc": qc_payload,
+                "counts": bundle["counts"],
+                "summary": bundle["manifest"]["summary"],
+                "training_summary": bundle["manifest"]["training_summary"],
+                "splits": bundle["splits"],
+                "coverage": _coverage_brief(bundle["coverage"]),
+                "artifacts": bundle["artifacts"],
+                "qc": _qc_brief(qc_payload),
             },
             ensure_ascii=False,
             indent=2,
         )
     )
+
+
+def _coverage_brief(coverage: dict[str, Any]) -> dict[str, Any]:
+    brief: dict[str, Any] = {}
+    for section, matrix in coverage.items():
+        if section == "splits" and isinstance(matrix, dict):
+            brief[section] = {name: _coverage_matrix_brief(value) for name, value in matrix.items()}
+        elif isinstance(matrix, dict):
+            brief[section] = _coverage_matrix_brief(matrix)
+    return brief
+
+
+def _coverage_matrix_brief(matrix: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "samples": matrix.get("samples", 0),
+        "unsafe_samples": matrix.get("unsafe_samples", 0),
+        "labels": matrix.get("labels", {}),
+        "coverage": matrix.get("coverage", {}),
+        "missing": matrix.get("missing", {}),
+    }
+
+
+def _qc_brief(qc_payload: dict[str, Any]) -> dict[str, Any]:
+    deterministic = dict(qc_payload.get("deterministic") or {})
+    deterministic.pop("rejected_samples", None)
+    llm = dict(qc_payload.get("llm") or {})
+    llm.pop("rejected_samples", None)
+    training_filter = dict(qc_payload.get("training_filter") or {})
+    training_filter.pop("rejected_samples", None)
+    return {
+        "policy": qc_payload.get("policy"),
+        "generation": qc_payload.get("generation"),
+        "deterministic": deterministic,
+        "llm": llm,
+        "production": qc_payload.get("production"),
+        "training_filter": training_filter,
+    }
+
+
+def _write_quality_report(
+    out: Path,
+    qc_payload: dict[str, Any],
+    deterministic_qc: dict[str, Any],
+    llm_qc_summary: dict[str, Any],
+    training_filter: dict[str, Any],
+) -> dict[str, str]:
+    artifacts = {
+        "quality_report": str(out / "quality_report.json"),
+        "metadata_quality_report": str(out / "metadata" / "quality_report.json"),
+    }
+    for path in (out / "quality_report.json", out / "metadata" / "quality_report.json"):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(qc_payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+    rejected_rows = deterministic_qc.get("rejected_samples", []) + llm_qc_summary.get("rejected_samples", [])
+    _write_optional_jsonl(out / "rejected_samples.jsonl", rejected_rows)
+    _write_optional_jsonl(out / "rejected" / "qc_rejected_samples.jsonl", rejected_rows)
+    if rejected_rows:
+        artifacts["rejected"] = str(out / "rejected_samples.jsonl")
+        artifacts["rejected_qc"] = str(out / "rejected" / "qc_rejected_samples.jsonl")
+    training_rejected = training_filter.get("rejected_samples") or []
+    _write_optional_jsonl(out / "training_rejected_samples.jsonl", training_rejected)
+    _write_optional_jsonl(out / "rejected" / "training_rejected_samples.jsonl", training_rejected)
+    if training_rejected:
+        artifacts["training_rejected"] = str(out / "training_rejected_samples.jsonl")
+        artifacts["rejected_training"] = str(out / "rejected" / "training_rejected_samples.jsonl")
+    return artifacts
+
+
+def _write_optional_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+    if rows:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", encoding="utf-8") as handle:
+            for item in rows:
+                handle.write(json.dumps(item, ensure_ascii=False, sort_keys=True) + "\n")
+        return
+    if path.exists():
+        path.unlink()
 
 
 def _emit_cli_progress(event: dict[str, Any]) -> None:

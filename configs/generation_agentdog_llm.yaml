@@ -31,5 +31,11 @@ llm_qc_consensus_threshold: 0.67
 llm_qc_match_policy: label_relabel
 qc_min_score: 0.74
 training_max_repair_level: structural
+write_clean_layout: true
+write_legacy_flat_files: true
+split_train_ratio: 0.8
+split_eval_ratio: 0.1
+split_test_ratio: 0.1
+split_seed: 20260701
 write_qc_report: true
 write_examples: false

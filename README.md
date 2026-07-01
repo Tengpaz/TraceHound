@@ -175,7 +175,7 @@ For contest-day retuning, edit `configs/generation.yaml` and run:
 python scripts/generate_data.py --config configs/generation.yaml
 ```
 
-The config supports output path, scale, `generation_backend: deterministic|llm`, scenario/label filters, and whether to export eval, TraceHound RiskReport SFT, AgentDoG binary SFT, AgentDoG fine-grained taxonomy SFT, preference, and RL-style datasets.
+The config supports output path, scale, `generation_backend: deterministic|llm`, scenario/label filters, train/eval/test split ratios, clean output layout, legacy compatibility copies, and whether to export eval, TraceHound RiskReport SFT, AgentDoG binary SFT, AgentDoG fine-grained taxonomy SFT, preference, and RL-style datasets.
 The cleaning/QC path now mirrors AgentDoG's two-layer design as closely as a local pre-contest implementation can: deterministic validators check turn structure, tool invocation legality, step coherence, readability, taxonomy alignment, and unsafe attack success; optional LLM QC adds API judge voting and consensus filtering. Use `qc_policy: agentdog_strict` or `--agentdog-strict-qc` to require the LLM semantic layer; the default `agentdog_local` keeps API calls off for Mac/local generation.
 LLM generation also records production quality signals. `raw_agentdog_qc` captures pre-repair quality, `repair_level` is `none`, `structural`, or `semantic`, and `quality_report.json` reports raw pass rate, repair rate, semantic repair rate, and training eligibility. By default, eval exports keep every QC-passing sample, while SFT/preference/RL exports only keep samples up to `training_max_repair_level: structural`; semantic salvage samples are retained for evaluation and diagnostics but not used for training unless you explicitly relax that config.
 `examples/demo_cases.json` is not refreshed by default; use `--write-examples` when you intentionally want to update the checked-in demo snapshot.
@@ -206,19 +206,23 @@ rm data/tmp/agentdog_llm_1000/_checkpoints/PAUSE
 
 Start with concurrency `2-4` unless you know the API rate limits. Higher concurrency is faster but can increase HTTP 400/429 retries and token spend.
 
-Default generated files include:
+Default generated outputs now use a clean dataset bundle layout:
 
-- `synthetic_eval.jsonl`
-- `synthetic_sft.jsonl`
-- `agentdog_binary_sft.jsonl`
-- `agentdog_taxonomy_sft.jsonl`
-- `agentdog_unified_sft.jsonl`
-- `agentdog15_unified_sft.jsonl`
-- `agentdog15_coarse_sft.jsonl`
-- `synthetic_preference.jsonl`
-- `quality_report.json`
-- `rejected_samples.jsonl` when any sample is filtered
-- `training_rejected_samples.jsonl` when QC-passing samples are excluded from training by the production quality filter
+- `cases/all.jsonl`: all QC-passing evaluation cases.
+- `cases/train.jsonl`, `cases/eval.jsonl`, `cases/test.jsonl`: deterministic train/eval/test splits over training-eligible cases.
+- `train/tracehound_risk_report_sft/{all,train,eval,test}.jsonl`: TraceHound JSON-report SFT task.
+- `train/agentdog/binary_safety/{all,train,eval,test}.jsonl`: binary-only AgentDoG safety task.
+- `train/agentdog/taxonomy_only/{all,train,eval,test}.jsonl`: fine-grained taxonomy-only AgentDoG task.
+- `train/agentdog/unified_four_label/{all,train,eval,test}.jsonl`: unified four-label AgentDoG task.
+- `train/agentdog15/{unified,coarse}/{all,train,eval,test}.jsonl`: AgentDoG 1.5 prompt-compatible exports.
+- `train/preference/dpo_pairs/{all,train,eval,test}.jsonl`: preference pairs.
+- `train/rl/rl_pairs/{all,train,eval,test}.jsonl`: RL-style pairs when `include_rl: true`.
+- `metadata/dataset_manifest.json`: file inventory, split counts, summaries, and config metadata.
+- `metadata/coverage_matrix.json`: 8 risk sources, 14 failure modes, 10 harm types, tool scenarios, pairwise matrices, and observed taxonomy triples.
+- `metadata/quality_report.json`: QC, repair, production filtering, coverage, and split diagnostics.
+- `rejected/qc_rejected_samples.jsonl` and `rejected/training_rejected_samples.jsonl` when samples are filtered.
+
+Root-level files such as `synthetic_eval.jsonl`, `agentdog_unified_sft.jsonl`, `quality_report.json`, and `rejected_samples.jsonl` are still written by default as compatibility copies. Set `write_legacy_flat_files: false` in the generation config, or pass `--no-legacy-flat-files`, when you want a cleaner output directory.
 
 AgentDoG training exports are split by objective:
 

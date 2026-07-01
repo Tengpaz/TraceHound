@@ -13,19 +13,9 @@ from uuid import uuid4
 from traceguard.compressor import compress_trajectory
 from traceguard.config import api_runtime_status
 from traceguard.data import TOOL_SCENARIOS, built_in_cases, dataset_summary
+from traceguard.dataset_layout import write_dataset_bundle
 from traceguard.enchantment import build_enchantment_plan, write_enchantment_plan
 from traceguard.evaluation import summarize_predictions
-from traceguard.export import (
-    agentdog15_coarse_sft_rows,
-    agentdog15_unified_sft_rows,
-    agentdog_binary_sft_rows,
-    agentdog_taxonomy_sft_rows,
-    agentdog_unified_sft_rows,
-    eval_rows,
-    rl_rows,
-    sft_rows,
-    write_jsonl,
-)
 from traceguard.generation_config import load_generation_config
 from traceguard.guard import TraceGuard
 from traceguard.judge import build_remote_judge
@@ -292,6 +282,27 @@ def create_app():
         include_eval = bool(body.get("include_eval", config.get("include_eval", True)))
         include_sft = bool(body.get("include_sft", config.get("include_sft", False)))
         include_rl = bool(body.get("include_rl", config.get("include_rl", False)))
+        write_clean_layout = bool(body.get("write_clean_layout", config.get("write_clean_layout", True)))
+        write_legacy_flat_files = bool(body.get("write_legacy_flat_files", config.get("write_legacy_flat_files", True)))
+        try:
+            split_train_ratio = _bounded_float(
+                body.get("split_train_ratio", config.get("split_train_ratio", 0.8)),
+                minimum=0.0,
+                maximum=1.0,
+            )
+            split_eval_ratio = _bounded_float(
+                body.get("split_eval_ratio", config.get("split_eval_ratio", 0.1)),
+                minimum=0.0,
+                maximum=1.0,
+            )
+            split_test_ratio = _bounded_float(
+                body.get("split_test_ratio", config.get("split_test_ratio", 0.1)),
+                minimum=0.0,
+                maximum=1.0,
+            )
+            split_seed = _bounded_int(body.get("split_seed", config.get("split_seed", 20260701)), minimum=1, maximum=99999999)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         generation_backend = str(body.get("generation_backend", config.get("generation_backend", "deterministic")))
         if generation_backend not in {"deterministic", "llm"}:
             raise HTTPException(status_code=400, detail="generation_backend must be deterministic or llm")
@@ -325,6 +336,12 @@ def create_app():
                 "include_eval": include_eval,
                 "include_sft": include_sft,
                 "include_rl": include_rl,
+                "write_clean_layout": write_clean_layout,
+                "write_legacy_flat_files": write_legacy_flat_files,
+                "split_train_ratio": split_train_ratio,
+                "split_eval_ratio": split_eval_ratio,
+                "split_test_ratio": split_test_ratio,
+                "split_seed": split_seed,
             },
         )
         Thread(
@@ -340,6 +357,12 @@ def create_app():
                 include_eval,
                 include_sft,
                 include_rl,
+                write_clean_layout,
+                write_legacy_flat_files,
+                split_train_ratio,
+                split_eval_ratio,
+                split_test_ratio,
+                split_seed,
             ),
             daemon=True,
         ).start()
@@ -751,6 +774,12 @@ def _run_data_generation_job(
     include_eval: bool,
     include_sft: bool,
     include_rl: bool,
+    write_clean_layout: bool,
+    write_legacy_flat_files: bool,
+    split_train_ratio: float,
+    split_eval_ratio: float,
+    split_test_ratio: float,
+    split_seed: int,
 ) -> None:
     try:
         _update_job(job_id, status="running", progress=8, step="building cases", message=f"building {count} cases")
@@ -832,23 +861,42 @@ def _run_data_generation_job(
             step="writing eval data",
             message=f"case summary: {summary}; QC pass_rate={qc_summary.get('pass_rate')}",
         )
-        if include_eval:
-            artifacts["eval"] = str(out_dir / "synthetic_eval.jsonl")
-            write_jsonl(out_dir / "synthetic_eval.jsonl", eval_rows(cases))
+        bundle = write_dataset_bundle(
+            out_dir,
+            cases,
+            training_cases,
+            include_eval=include_eval,
+            include_sft=include_sft,
+            include_agentdog_sft=include_sft,
+            include_agentdog15_official_sft=include_sft,
+            include_preference=include_sft,
+            include_rl=include_rl,
+            write_clean_layout=write_clean_layout,
+            write_legacy_flat_files=write_legacy_flat_files,
+            split_train_ratio=split_train_ratio,
+            split_eval_ratio=split_eval_ratio,
+            split_test_ratio=split_test_ratio,
+            split_seed=split_seed,
+            manifest_extra={
+                "job_id": job_id,
+                "generation_backend": generation_backend,
+                "semantic_repair_backend": semantic_repair_backend,
+                "semantic_repair_rounds": semantic_repair_rounds,
+            },
+        )
+        artifacts.update(bundle["artifacts"])
+        _write_generation_diagnostics(
+            out_dir,
+            artifacts,
+            generation_summary,
+            qc_summary,
+            production_summary,
+            training_filter,
+            coverage=bundle["coverage"],
+            splits=bundle["splits"],
+        )
         _update_job(job_id, progress=88, step="writing sft data", message="eval export complete")
         if include_sft:
-            artifacts["sft"] = str(out_dir / "synthetic_sft.jsonl")
-            artifacts["agentdog_binary_sft"] = str(out_dir / "agentdog_binary_sft.jsonl")
-            artifacts["agentdog_taxonomy_sft"] = str(out_dir / "agentdog_taxonomy_sft.jsonl")
-            artifacts["agentdog_unified_sft"] = str(out_dir / "agentdog_unified_sft.jsonl")
-            artifacts["agentdog15_unified_sft"] = str(out_dir / "agentdog15_unified_sft.jsonl")
-            artifacts["agentdog15_coarse_sft"] = str(out_dir / "agentdog15_coarse_sft.jsonl")
-            write_jsonl(out_dir / "synthetic_sft.jsonl", sft_rows(training_cases))
-            write_jsonl(out_dir / "agentdog_binary_sft.jsonl", agentdog_binary_sft_rows(training_cases))
-            write_jsonl(out_dir / "agentdog_taxonomy_sft.jsonl", agentdog_taxonomy_sft_rows(training_cases))
-            write_jsonl(out_dir / "agentdog_unified_sft.jsonl", agentdog_unified_sft_rows(training_cases))
-            write_jsonl(out_dir / "agentdog15_unified_sft.jsonl", agentdog15_unified_sft_rows(training_cases))
-            write_jsonl(out_dir / "agentdog15_coarse_sft.jsonl", agentdog15_coarse_sft_rows(training_cases))
             _update_job(
                 job_id,
                 message=(
@@ -858,9 +906,6 @@ def _run_data_generation_job(
                 ),
             )
         _update_job(job_id, progress=94, step="writing rl data", message="sft export complete")
-        if include_rl:
-            artifacts["rl"] = str(out_dir / "synthetic_rl.jsonl")
-            write_jsonl(out_dir / "synthetic_rl.jsonl", rl_rows(training_cases))
         latest.parent.mkdir(parents=True, exist_ok=True)
         latest.write_text(str(out_dir), encoding="utf-8")
         _update_job(
@@ -870,6 +915,8 @@ def _run_data_generation_job(
             step="completed",
             artifacts=artifacts,
             summary=summary,
+            splits=bundle["splits"],
+            coverage=bundle["coverage"],
             quality=qc_summary,
             production=production_summary,
             message="data generation completed",
@@ -930,8 +977,11 @@ def _write_generation_diagnostics(
     qc_summary: Dict[str, Any],
     production_summary: Dict[str, Any],
     training_filter: Dict[str, Any],
+    coverage: Dict[str, Any] | None = None,
+    splits: Dict[str, Any] | None = None,
 ) -> None:
     artifacts["quality_report"] = str(out_dir / "quality_report.json")
+    artifacts["metadata_quality_report"] = str(out_dir / "metadata" / "quality_report.json")
     payload = {
         "policy": "agentdog_local",
         "generation": generation_summary,
@@ -940,26 +990,49 @@ def _write_generation_diagnostics(
         "production": production_summary,
         "training_filter": training_filter,
     }
-    (out_dir / "quality_report.json").write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
+    if coverage is not None:
+        payload["coverage"] = coverage
+    if splits is not None:
+        payload["splits"] = splits
+    for report_path in (out_dir / "quality_report.json", out_dir / "metadata" / "quality_report.json"):
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
     rejected_rows = list(generation_summary.get("rejected_samples") or []) + list(qc_summary.get("rejected_samples") or [])
     if rejected_rows:
         artifacts["rejected"] = str(out_dir / "rejected_samples.jsonl")
+        artifacts["rejected_qc"] = str(out_dir / "rejected" / "qc_rejected_samples.jsonl")
         with (out_dir / "rejected_samples.jsonl").open("w", encoding="utf-8") as handle:
             for item in rejected_rows:
                 handle.write(json.dumps(item, ensure_ascii=False, sort_keys=True) + "\n")
+        (out_dir / "rejected").mkdir(parents=True, exist_ok=True)
+        with (out_dir / "rejected" / "qc_rejected_samples.jsonl").open("w", encoding="utf-8") as handle:
+            for item in rejected_rows:
+                handle.write(json.dumps(item, ensure_ascii=False, sort_keys=True) + "\n")
     else:
-        rejected_path = out_dir / "rejected_samples.jsonl"
-        if rejected_path.exists():
-            rejected_path.unlink()
+        for rejected_path in (out_dir / "rejected_samples.jsonl", out_dir / "rejected" / "qc_rejected_samples.jsonl"):
+            if rejected_path.exists():
+                rejected_path.unlink()
     training_rejected = list(training_filter.get("rejected_samples") or [])
     if training_rejected:
         artifacts["training_rejected"] = str(out_dir / "training_rejected_samples.jsonl")
+        artifacts["rejected_training"] = str(out_dir / "rejected" / "training_rejected_samples.jsonl")
         with (out_dir / "training_rejected_samples.jsonl").open("w", encoding="utf-8") as handle:
             for item in training_rejected:
                 handle.write(json.dumps(item, ensure_ascii=False, sort_keys=True) + "\n")
+        (out_dir / "rejected").mkdir(parents=True, exist_ok=True)
+        with (out_dir / "rejected" / "training_rejected_samples.jsonl").open("w", encoding="utf-8") as handle:
+            for item in training_rejected:
+                handle.write(json.dumps(item, ensure_ascii=False, sort_keys=True) + "\n")
+    else:
+        for rejected_path in (
+            out_dir / "training_rejected_samples.jsonl",
+            out_dir / "rejected" / "training_rejected_samples.jsonl",
+        ):
+            if rejected_path.exists():
+                rejected_path.unlink()
 
 
 def _qc_failure_message(generation_summary: Dict[str, Any], qc_summary: Dict[str, Any]) -> str:

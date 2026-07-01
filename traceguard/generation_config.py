@@ -37,6 +37,12 @@ DEFAULT_GENERATION_CONFIG: Dict[str, Any] = {
     "llm_qc_match_policy": "exact_taxonomy",
     "qc_min_score": 0.74,
     "training_max_repair_level": "structural",
+    "write_clean_layout": True,
+    "write_legacy_flat_files": True,
+    "split_train_ratio": 0.8,
+    "split_eval_ratio": 0.1,
+    "split_test_ratio": 0.1,
+    "split_seed": 20260701,
     "write_qc_report": True,
     "write_examples": False,
 }
