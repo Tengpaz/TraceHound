@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -41,7 +42,13 @@ def main() -> None:
     parser.add_argument("--api-key")
     parser.add_argument("--model")
     parser.add_argument("--api-path")
-    parser.add_argument("--api-profile", default="intern-s2-preview", help="OpenAI-compatible profile defaults.")
+    parser.add_argument(
+        "--api-profile",
+        help=(
+            "Optional OpenAI-compatible profile defaults, e.g. intern-s2-preview. "
+            "Unset by default so .env/TRACEHOUND_API_BASE and TRACEHOUND_MODEL are used as-is."
+        ),
+    )
     parser.add_argument("--profile-path", help="Optional model profile JSON path.")
     parser.add_argument("--timeout", type=int)
     parser.add_argument("--prompt-mode", default="compressed", choices=["compressed", "full"])
@@ -50,7 +57,8 @@ def main() -> None:
     args = parser.parse_args()
 
     load_env_file(args.env_file)
-    profile = _api_profile_defaults(args.api_profile, args.profile_path)
+    api_profile = args.api_profile if args.api_profile is not None else os.getenv("TRACEHOUND_API_PROFILE")
+    profile = _api_profile_defaults(api_profile, args.profile_path)
     try:
         config = api_config_from_env(
             api_base=args.api_base or profile.get("api_base"),
@@ -82,7 +90,7 @@ def main() -> None:
         "judge": args.judge,
         "mode": args.mode,
         "prompt_mode": args.prompt_mode,
-        "api_profile": args.api_profile,
+        "api_profile": api_profile or "",
         "limit": args.limit,
         "api_key_present": bool(config.api_key),
     }

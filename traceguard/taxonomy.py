@@ -56,22 +56,22 @@ AGENTDOG_ORIGINAL_NAMES = {
     "malicious_user_instruction_or_jailbreak": "Malicious User Instruction or Jailbreak",
     "direct_prompt_injection": "Direct Prompt Injection",
     "indirect_prompt_injection": "Indirect Prompt Injection",
-    "unreliable_or_misinformation": "Unreliable or Misinformation",
+    "unreliable_or_misinformation": "Unreliable or Mis-information",
     "tool_description_injection": "Tool Description Injection",
     "malicious_tool_execution": "Malicious Tool Execution",
     "corrupted_tool_feedback": "Corrupted Tool Feedback",
-    "inherent_agent_or_llm_failures": "Inherent Agent or LLM Failures",
+    "inherent_agent_or_llm_failures": "Inherent Agent/LLM Failures",
     "unconfirmed_or_over_privileged_action": "Unconfirmed or Over-privileged Action",
     "flawed_planning_or_reasoning": "Flawed Planning or Reasoning",
     "incorrect_tool_parameters": "Incorrect Tool Parameters",
-    "choosing_malicious_tools": "Choosing Malicious Tools",
-    "tool_misuse_in_specific_context": "Tool Misuse in a Specific Context",
+    "choosing_malicious_tools": "Choosing Malicious Tool",
+    "tool_misuse_in_specific_context": "Tool Misuse in Specific Context",
     "failure_to_validate_tool_outputs": "Failure to Validate Tool Outputs",
-    "insecure_interaction_or_execution": "Insecure Interaction or Execution",
+    "insecure_interaction_or_execution": "Insecure Execution or Interaction",
     "procedural_deviation_or_inaction": "Procedural Deviation or Inaction",
     "inefficient_or_wasteful_execution": "Inefficient or Wasteful Execution",
-    "generation_of_harmful_or_offensive_content": "Generation of Harmful or Offensive Content",
-    "instruction_for_harmful_or_illegal_activity": "Instruction for Harmful or Illegal Activity",
+    "generation_of_harmful_or_offensive_content": "Generation of Harmful/Offensive Content",
+    "instruction_for_harmful_or_illegal_activity": "Instruction for Harmful/Illegal Activity",
     "generation_of_malicious_executables": "Generation of Malicious Executables",
     "unauthorized_information_disclosure": "Unauthorized Information Disclosure",
     "provide_inaccurate_misleading_or_unverified_information": (
@@ -100,4 +100,3 @@ def is_valid_failure_mode(label: str) -> bool:
 
 def is_valid_harm_type(label: str) -> bool:
     return label in HARM_TYPE_LABELS
-

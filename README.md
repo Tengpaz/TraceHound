@@ -180,18 +180,53 @@ The cleaning/QC path now mirrors AgentDoG's two-layer design as closely as a loc
 LLM generation also records production quality signals. `raw_agentdog_qc` captures pre-repair quality, `repair_level` is `none`, `structural`, or `semantic`, and `quality_report.json` reports raw pass rate, repair rate, semantic repair rate, and training eligibility. By default, eval exports keep every QC-passing sample, while SFT/preference/RL exports only keep samples up to `training_max_repair_level: structural`; semantic salvage samples are retained for evaluation and diagnostics but not used for training unless you explicitly relax that config.
 `examples/demo_cases.json` is not refreshed by default; use `--write-examples` when you intentionally want to update the checked-in demo snapshot.
 
+Long LLM generation jobs support incremental checkpoints, resume, pause, and conservative concurrency:
+
+```bash
+python scripts/generate_data.py \
+  --config configs/generation_agentdog_llm.yaml \
+  --out data/tmp/agentdog_llm_1000 \
+  --count 1000 \
+  --llm-generation-concurrency 3 \
+  --llm-qc-concurrency 2
+```
+
+In LLM mode, checkpoints are written by default to `<out>/_checkpoints/` as each case finishes. Key files are `llm_generated_cases.jsonl`, `llm_generation_rejected.jsonl`, `llm_qc_kept_cases.jsonl`, `llm_qc_rejected_cases.jsonl`, and state JSON files for progress monitors. Resume an interrupted run with the same `--out` and `--resume`; completed case ids are skipped:
+
+```bash
+python scripts/generate_data.py --config configs/generation_agentdog_llm.yaml --out data/tmp/agentdog_llm_1000 --resume
+```
+
+To pause without killing in-flight API calls, create the pause file; remove it to continue:
+
+```bash
+touch data/tmp/agentdog_llm_1000/_checkpoints/PAUSE
+rm data/tmp/agentdog_llm_1000/_checkpoints/PAUSE
+```
+
+Start with concurrency `2-4` unless you know the API rate limits. Higher concurrency is faster but can increase HTTP 400/429 retries and token spend.
+
 Default generated files include:
 
 - `synthetic_eval.jsonl`
 - `synthetic_sft.jsonl`
 - `agentdog_binary_sft.jsonl`
 - `agentdog_taxonomy_sft.jsonl`
+- `agentdog_unified_sft.jsonl`
 - `agentdog15_unified_sft.jsonl`
 - `agentdog15_coarse_sft.jsonl`
 - `synthetic_preference.jsonl`
 - `quality_report.json`
 - `rejected_samples.jsonl` when any sample is filtered
 - `training_rejected_samples.jsonl` when QC-passing samples are excluded from training by the production quality filter
+
+AgentDoG training exports are split by objective:
+
+- `agentdog_binary_sft.jsonl`: binary-only supervision. The assistant outputs only `Safe` or `Unsafe`.
+- `agentdog_taxonomy_sft.jsonl`: taxonomy-only supervision. The assistant outputs only `Risk Source`, `Failure Mode`, and `Real World Harm`; safe/binary supervision is excluded.
+- `agentdog_unified_sft.jsonl`: four-label supervision. The assistant outputs `Safety`, `Risk Source`, `Failure Mode`, and `Real World Harm`, using `None` for the three fine-grained labels when `Safety: Safe`.
+
+The taxonomy-only and unified files use the AgentDoG-style `{"id": "...", "task": "...", "messages": [...]}` shape and embed the full 8/14/10 categorization block in the user prompt. `agentdog15_unified_sft.jsonl` is kept separately as the official AgentDoG 1.5 prompt-compatible export.
 
 Run quality checks:
 
@@ -261,6 +296,12 @@ Run a small smoke validation first:
 
 ```bash
 python scripts/validate_api.py --data data/synthetic_eval.jsonl --limit 1 --judge api
+```
+
+By default `validate_api.py` uses `.env` / `TRACEHOUND_API_BASE` / `TRACEHOUND_MODEL` exactly as configured. To use a packaged profile such as Intern's OpenAI-compatible endpoint, pass it explicitly:
+
+```bash
+python scripts/validate_api.py --data data/synthetic_eval.jsonl --limit 1 --judge api --api-profile intern-s2-preview
 ```
 
 Then run the cost-aware hybrid path, which uses rules for high-confidence early exits and calls the API only when needed:

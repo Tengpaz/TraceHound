@@ -20,6 +20,7 @@ from traceguard.export import (
     agentdog15_unified_sft_rows,
     agentdog_binary_sft_rows,
     agentdog_taxonomy_sft_rows,
+    agentdog_unified_sft_rows,
     eval_rows,
     rl_rows,
     sft_rows,
@@ -839,11 +840,13 @@ def _run_data_generation_job(
             artifacts["sft"] = str(out_dir / "synthetic_sft.jsonl")
             artifacts["agentdog_binary_sft"] = str(out_dir / "agentdog_binary_sft.jsonl")
             artifacts["agentdog_taxonomy_sft"] = str(out_dir / "agentdog_taxonomy_sft.jsonl")
+            artifacts["agentdog_unified_sft"] = str(out_dir / "agentdog_unified_sft.jsonl")
             artifacts["agentdog15_unified_sft"] = str(out_dir / "agentdog15_unified_sft.jsonl")
             artifacts["agentdog15_coarse_sft"] = str(out_dir / "agentdog15_coarse_sft.jsonl")
             write_jsonl(out_dir / "synthetic_sft.jsonl", sft_rows(training_cases))
             write_jsonl(out_dir / "agentdog_binary_sft.jsonl", agentdog_binary_sft_rows(training_cases))
             write_jsonl(out_dir / "agentdog_taxonomy_sft.jsonl", agentdog_taxonomy_sft_rows(training_cases))
+            write_jsonl(out_dir / "agentdog_unified_sft.jsonl", agentdog_unified_sft_rows(training_cases))
             write_jsonl(out_dir / "agentdog15_unified_sft.jsonl", agentdog15_unified_sft_rows(training_cases))
             write_jsonl(out_dir / "agentdog15_coarse_sft.jsonl", agentdog15_coarse_sft_rows(training_cases))
             _update_job(

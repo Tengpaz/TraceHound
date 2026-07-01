@@ -1,7 +1,7 @@
 import json
 
 from traceguard.data import TOOL_SCENARIOS, built_in_cases, dataset_summary
-from traceguard.export import agentdog_binary_sft_rows, agentdog_taxonomy_sft_rows
+from traceguard.export import agentdog_binary_sft_rows, agentdog_taxonomy_sft_rows, agentdog_unified_sft_rows
 from traceguard.quality import filter_cases_by_agentdog_qc, quality_check_jsonl
 from traceguard.taxonomy import FAILURE_MODES, HARM_TYPES, RISK_SOURCES
 
@@ -47,11 +47,38 @@ def test_agentdog_sft_exports_binary_and_taxonomy_rows():
     cases = built_in_cases(count=4)
     binary_rows = list(agentdog_binary_sft_rows(cases))
     taxonomy_rows = list(agentdog_taxonomy_sft_rows(cases))
+    unified_rows = list(agentdog_unified_sft_rows(cases))
     assert len(binary_rows) == 4
-    assert len(taxonomy_rows) == 4
+    assert len(taxonomy_rows) == sum(1 for case in cases if case["gold"]["label"] == "unsafe")
+    assert len(unified_rows) == 4
     assert binary_rows[0]["task_type"] == "trajectory_level_safety_evaluation"
-    assert taxonomy_rows[0]["task_type"] == "fine_grained_risk_diagnosis"
-    assert "Risk Source:" in taxonomy_rows[0]["messages"][-1]["content"]
+    assert binary_rows[0]["messages"][-1]["content"] in {"Safe", "Unsafe"}
+    assert list(taxonomy_rows[0]) == ["id", "task", "messages"]
+    assert taxonomy_rows[0]["id"].startswith("taxonomy-")
+    assert taxonomy_rows[0]["task"] == "taxonomy"
+    assert [message["role"] for message in taxonomy_rows[0]["messages"]] == ["user", "assistant"]
+    assert "Task:\nEvaluate the risk source, failure mode, and real world harm" in taxonomy_rows[0]["messages"][0]["content"]
+    assert "<BEGIN CATEGORIZATION>" in taxonomy_rows[0]["messages"][0]["content"]
+    assert "<BEGIN TRAJECTORY>" in taxonomy_rows[0]["messages"][0]["content"]
+    assert taxonomy_rows[0]["messages"][-1]["content"].startswith("Risk Source:")
+    assert "Real World Harm:" in taxonomy_rows[0]["messages"][-1]["content"]
+    assert "Safety:" not in taxonomy_rows[0]["messages"][-1]["content"]
+    assert list(unified_rows[0]) == ["id", "task", "messages"]
+    assert unified_rows[0]["id"].startswith("unified-")
+    assert unified_rows[0]["task"] == "unified"
+    assert "Safety:" in unified_rows[0]["messages"][-1]["content"]
+    assert "Risk Source:" in unified_rows[0]["messages"][-1]["content"]
+    assert "Failure Mode:" in unified_rows[0]["messages"][-1]["content"]
+    assert "Real World Harm:" in unified_rows[0]["messages"][-1]["content"]
+    safe_unified = next(row for row, case in zip(unified_rows, cases) if case["gold"]["label"] == "safe")
+    assert safe_unified["messages"][-1]["content"] == "\n".join(
+        [
+            "Safety: Safe",
+            "Risk Source: None",
+            "Failure Mode: None",
+            "Real World Harm: None",
+        ]
+    )
 
 
 def test_quality_check_accepts_generated_cases(tmp_path):
