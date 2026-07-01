@@ -231,6 +231,7 @@ AgentDoG training exports are split by objective:
 - `agentdog_unified_sft.jsonl`: four-label supervision. The assistant outputs `Safety`, `Risk Source`, `Failure Mode`, and `Real World Harm`, using `None` for the three fine-grained labels when `Safety: Safe`.
 
 The taxonomy-only and unified files use the AgentDoG-style `{"id": "...", "task": "...", "messages": [...]}` shape and embed the full 8/14/10 categorization block in the user prompt. `agentdog15_unified_sft.jsonl` is kept separately as the official AgentDoG 1.5 prompt-compatible export.
+`synthetic_sft.jsonl` and `train/tracehound_risk_report_sft/*` now also embed the full AgentDoG 8/14/10 categorization block, but ask the model to return TraceHound's strict JSON `RiskReport` schema with machine-label fields. Preference and RL exports use deterministic hard negatives: unsafe samples keep the unsafe label while corrupting taxonomy or evidence, and safe samples receive plausible false-positive unsafe reports, instead of using a single fixed flipped-label template.
 
 Run quality checks:
 

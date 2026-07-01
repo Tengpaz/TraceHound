@@ -1,8 +1,15 @@
 import json
 
 from traceguard.data import TOOL_SCENARIOS, built_in_cases, dataset_summary
-from traceguard.export import agentdog_binary_sft_rows, agentdog_taxonomy_sft_rows, agentdog_unified_sft_rows
+from traceguard.export import (
+    agentdog_binary_sft_rows,
+    agentdog_taxonomy_sft_rows,
+    agentdog_unified_sft_rows,
+    preference_rows,
+    sft_rows,
+)
 from traceguard.quality import filter_cases_by_agentdog_qc, quality_check_jsonl
+from traceguard.schema import RiskReport
 from traceguard.taxonomy import FAILURE_MODES, HARM_TYPES, RISK_SOURCES
 
 
@@ -79,6 +86,51 @@ def test_agentdog_sft_exports_binary_and_taxonomy_rows():
             "Real World Harm: None",
         ]
     )
+
+
+def test_tracehound_sft_prompt_is_taxonomy_grounded_json_task():
+    case = built_in_cases(count=1)[0]
+    row = next(sft_rows([case]))
+    prompt = row["messages"][1]["content"]
+    target = json.loads(row["messages"][-1]["content"])
+
+    assert row["task_type"] == "tracehound_risk_report_json"
+    assert "<BEGIN CATEGORIZATION>" in prompt
+    assert "<BEGIN TRAJECTORY_JSON>" in prompt
+    assert "Return exactly one strict JSON object" in prompt
+    assert '"risk_source": "none | one TraceHound risk_source machine label"' in prompt
+    assert "malicious_user_instruction_or_jailbreak" in prompt
+    assert "unconfirmed_or_over_privileged_action" in prompt
+    assert "privacy_confidentiality_harm" in prompt
+    assert RiskReport.model_validate(target)
+
+
+def test_preference_rows_use_deterministic_hard_negatives():
+    cases = built_in_cases(count=4)
+    rows = list(preference_rows(cases))
+    unsafe_row = next(row for row, case in zip(rows, cases) if case["gold"]["label"] == "unsafe")
+    safe_row = next(row for row, case in zip(rows, cases) if case["gold"]["label"] == "safe")
+
+    unsafe_chosen = RiskReport.model_validate(json.loads(unsafe_row["chosen"]))
+    unsafe_rejected = RiskReport.model_validate(json.loads(unsafe_row["rejected"]))
+    assert unsafe_row["negative_type"] == "unsafe_wrong_taxonomy_or_evidence"
+    assert unsafe_rejected.label == "unsafe"
+    assert (
+        unsafe_rejected.risk_source != unsafe_chosen.risk_source
+        or unsafe_rejected.failure_mode != unsafe_chosen.failure_mode
+        or unsafe_rejected.harm_type != unsafe_chosen.harm_type
+        or unsafe_rejected.evidence_steps != unsafe_chosen.evidence_steps
+    )
+    assert "Incorrect or ungrounded risk report" not in unsafe_rejected.reason
+
+    safe_rejected = RiskReport.model_validate(json.loads(safe_row["rejected"]))
+    assert safe_row["negative_type"] == "safe_false_positive"
+    assert safe_rejected.label == "unsafe"
+    assert safe_rejected.risk_source != "none"
+    assert safe_rejected.failure_mode != "none"
+    assert safe_rejected.harm_type != "none"
+    assert safe_rejected.evidence_steps
+    assert "<BEGIN CATEGORIZATION>" in safe_row["prompt"]
 
 
 def test_quality_check_accepts_generated_cases(tmp_path):
