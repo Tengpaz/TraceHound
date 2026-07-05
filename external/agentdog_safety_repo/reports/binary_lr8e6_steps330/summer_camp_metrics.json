@@ -1,0 +1,26 @@
+{
+  "total": 864,
+  "invalid_rate": 0.0,
+  "accuracy": 0.7303240740740741,
+  "f1_score": 0.7791469194312797,
+  "precision_unsafe": 0.6771004942339374,
+  "recall_unsafe": 0.9174107142857143,
+  "valid_predictions": 864,
+  "invalid_outputs": 0,
+  "think_tag_outputs": 0,
+  "think_tag_rate": 0.0,
+  "tp": 411,
+  "fp": 196,
+  "tn": 220,
+  "fn": 37,
+  "output_token_cost": {
+    "mean": 15.0,
+    "max": 15,
+    "min": 15,
+    "median": 15.0
+  },
+  "model_path": "/root/autodl-tmp/sft_dedup_binary/outputs/models/binary_dedup_lr8e-6_steps330/checkpoint-330",
+  "dataset_name": "AI45Research/2026_summer_camp_teseset",
+  "split": "train",
+  "prompt_version": "binary_safety_no_tools_v4"
+}

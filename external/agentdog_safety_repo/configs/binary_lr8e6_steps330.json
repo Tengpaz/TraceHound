@@ -1,0 +1,22 @@
+{
+  "run_name": "binary_dedup_lr8e-6_steps330",
+  "base_model": "/root/autodl-tmp/models/Qwen3.5-0.8B",
+  "train_file": "/root/autodl-tmp/sft_dedup_binary/data/agentdog_binary_dedup_train.jsonl",
+  "validation_file": "/root/autodl-tmp/sft_dedup_binary/data/agentdog_binary_dedup_val.jsonl",
+  "output_dir": "/root/autodl-tmp/sft_dedup_binary/outputs/models/binary_dedup_lr8e-6_steps330",
+  "checkpoint": "/root/autodl-tmp/sft_dedup_binary/outputs/models/binary_dedup_lr8e-6_steps330/checkpoint-330",
+  "learning_rate": 0.000008,
+  "num_train_epochs": 2,
+  "max_steps": 330,
+  "per_device_train_batch_size": 1,
+  "gradient_accumulation_steps": 8,
+  "effective_train_batch_size": 8,
+  "max_length": 8192,
+  "warmup_ratio": 0.03,
+  "logging_steps": 10,
+  "save_steps": 25,
+  "save_total_limit": 1,
+  "seed": 42,
+  "dtype": "bfloat16",
+  "thinking_disabled": true
+}

@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Local data, generated outputs, and large model artifacts
+/data/*
+!/data/.gitkeep
+/outputs/*
+!/outputs/.gitkeep
+/checkpoints/*
+!/checkpoints/.gitkeep
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.tar.gz
+*.zip
+
+# Runtime logs
+*.log
+wandb/
+runs/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

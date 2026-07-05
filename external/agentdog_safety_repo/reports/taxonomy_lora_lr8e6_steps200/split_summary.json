@@ -1,0 +1,7 @@
+{
+  "total": 1994,
+  "train": 1595,
+  "val": 399,
+  "val_ratio": 0.2,
+  "seed": 42
+}

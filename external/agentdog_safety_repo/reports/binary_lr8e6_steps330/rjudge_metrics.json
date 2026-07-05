@@ -1,0 +1,29 @@
+{
+  "total": 564,
+  "invalid_rate": 0.0,
+  "accuracy": 0.8102836879432624,
+  "f1_score": 0.831496062992126,
+  "precision_unsafe": 0.7833827893175074,
+  "recall_unsafe": 0.8859060402684564,
+  "f1_safe": 0.7829614604462475,
+  "precision_safe": 0.8502202643171806,
+  "recall_safe": 0.7255639097744361,
+  "valid_predictions": 564,
+  "invalid_outputs": 0,
+  "think_tag_outputs": 0,
+  "think_tag_rate": 0.0,
+  "tp": 264,
+  "fp": 73,
+  "tn": 193,
+  "fn": 34,
+  "output_token_cost": {
+    "mean": 15.0,
+    "max": 15,
+    "min": 15,
+    "median": 15.0
+  },
+  "model_path": "/root/autodl-tmp/sft_dedup_binary/outputs/models/binary_dedup_lr8e-6_steps330/checkpoint-330",
+  "dataset": "summer_camp_rjudge",
+  "input_json": "/root/autodl-tmp/datasets/summer_camp_rjudge/summer_camp_rjudge.json",
+  "prompt_version": "agentdog_binary_original_prompt_rjudge_fields"
+}

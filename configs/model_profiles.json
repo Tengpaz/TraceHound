@@ -202,6 +202,51 @@
         ]
       }
     },
+    "agentdog-qwen3_5-0_8b-6label-imported": {
+      "provider": "huggingface",
+      "family": "qwen",
+      "role": "six_label_guard",
+      "task": "agentdog_six_label_reason",
+      "display_name": "AgentDoG-Qwen3.5-0.8B-6Label-Imported",
+      "base_model": "Qwen/Qwen3.5-0.8B",
+      "local_path": "checkpoints/imported/qwen35-0.8b-6label",
+      "recommended_use": "Imported full-parameter six-label SFT checkpoint for binary judgment, risk source, failure mode, harm type, trajectory source, and reason-generation experiments.",
+      "smoke": false,
+      "formal_lora": false,
+      "trust_remote_code": true,
+      "torch_dtype": "bfloat16",
+      "device_map": "auto",
+      "recommended_max_input_tokens": 4096,
+      "notes": "Imported from /Users/a1234/Downloads/qwen35-0.8b-6label.tar.gz. The checkpoint is kept locally under checkpoints/imported and is intentionally ignored by Git because model.safetensors is large.",
+      "output_contract": {
+        "type": "six_label_reason_json",
+        "fields": [
+          "judgment",
+          "source",
+          "risk_source",
+          "failure_mode",
+          "harm_type",
+          "reason"
+        ],
+        "labels": {
+          "judgment": [
+            "safe",
+            "unsafe"
+          ],
+          "source": [
+            "Safe",
+            "Unsafe",
+            "Benign",
+            "False_Refusal"
+          ]
+        }
+      },
+      "training": {
+        "method": "full_parameter_sft",
+        "related_grpo_config": "external/agentdog_sft_project/configs/grpo_6label_defaults.json",
+        "related_sft_config": "external/agentdog_sft_project/configs/training_6label_defaults.json"
+      }
+    },
     "intern-s2-preview": {
       "provider": "openai_compatible",
       "family": "intern",

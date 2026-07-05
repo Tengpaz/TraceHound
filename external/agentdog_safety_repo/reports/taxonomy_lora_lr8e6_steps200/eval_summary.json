@@ -1,0 +1,88 @@
+{
+  "adapter": "/root/autodl-tmp/taxonomy_lora/outputs/qwen35_08b_taxonomy_lora_lr8e-6_steps200/checkpoint-200",
+  "base_model": "/root/autodl-tmp/models/Qwen3.5-0.8B",
+  "combined_binary": {
+    "accuracy": 0.5219907407407407,
+    "accuracy_valid_only": 0.5219907407407407,
+    "invalid_count": 0,
+    "invalid_rate": 0.0,
+    "num_examples": 864,
+    "output_token_cost": {
+      "max": 39,
+      "mean": 31.408564814814813,
+      "median": 32.0,
+      "min": 23
+    },
+    "safe": {
+      "f1": 0.7209302325581395,
+      "precision": 0.578538102643857,
+      "recall": 0.9562982005141388
+    },
+    "unsafe": {
+      "f1": 0.3508771929824562,
+      "precision": 0.8035714285714286,
+      "recall": 0.22443890274314215
+    }
+  },
+  "dataset_root": "/root/autodl-tmp/datasets/2026_summer_camp_teseset",
+  "datasets": {
+    "atbench": {
+      "metrics": {
+        "accuracy": 0.52,
+        "accuracy_valid_only": 0.52,
+        "exact_4d_accuracy": 0.0,
+        "failure_mode_accuracy": 0.14333333333333334,
+        "harm_type_accuracy": 0.17,
+        "invalid_count": 0,
+        "invalid_rate": 0.0,
+        "num_examples": 300,
+        "output_token_cost": {
+          "max": 39,
+          "mean": 32.776666666666664,
+          "median": 32.0,
+          "min": 28
+        },
+        "risk_source_accuracy": 0.10666666666666667,
+        "safe": {
+          "f1": 0.6149732620320856,
+          "precision": 0.5133928571428571,
+          "recall": 0.7666666666666667
+        },
+        "unsafe": {
+          "f1": 0.3628318584070796,
+          "precision": 0.5394736842105263,
+          "recall": 0.2733333333333333
+        }
+      },
+      "predictions": "/root/autodl-tmp/taxonomy_lora/eval_outputs/qwen35_08b_taxonomy_lora_lr8e-6_steps200_full/atbench_predictions.jsonl",
+      "taxonomy_metrics_enabled": true
+    },
+    "rjudge": {
+      "metrics": {
+        "accuracy": 0.5230496453900709,
+        "accuracy_valid_only": 0.5230496453900709,
+        "invalid_count": 0,
+        "invalid_rate": 0.0,
+        "num_examples": 564,
+        "output_token_cost": {
+          "max": 38,
+          "mean": 30.680851063829788,
+          "median": 31.0,
+          "min": 23
+        },
+        "safe": {
+          "f1": 0.6599241466498104,
+          "precision": 0.49714285714285716,
+          "recall": 0.981203007518797
+        },
+        "unsafe": {
+          "f1": 0.20178041543026706,
+          "precision": 0.8717948717948718,
+          "recall": 0.11409395973154363
+        }
+      },
+      "predictions": "/root/autodl-tmp/taxonomy_lora/eval_outputs/qwen35_08b_taxonomy_lora_lr8e-6_steps200_full/rjudge_predictions.jsonl",
+      "taxonomy_metrics_enabled": false
+    }
+  }
+}

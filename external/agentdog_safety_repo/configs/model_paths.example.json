@@ -1,0 +1,7 @@
+{
+  "base_model": "/root/autodl-tmp/models/Qwen3.5-0.8B",
+  "binary_sft_checkpoint": "/root/autodl-tmp/sft_dedup_binary/outputs/models/binary_dedup_lr8e-6_steps330/checkpoint-330",
+  "taxonomy_lora_checkpoint": "/root/autodl-tmp/taxonomy_lora/outputs/qwen35_08b_taxonomy_lora_lr8e-6_steps200/checkpoint-200",
+  "summer_camp_dataset_root": "/root/autodl-tmp/datasets/2026_summer_camp_teseset",
+  "rjudge_json": "/root/autodl-tmp/datasets/2026_summer_camp_teseset/summer_camp_rjudge.json"
+}
