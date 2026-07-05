@@ -1,0 +1,40 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Read|Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python /absolute/path/to/TraceHound/scripts/guardrail_hook.py --platform claude-code --event-type auto --mode layered --judge heuristic --server-url http://127.0.0.1:8000 --adapter-json",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Read|Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python /absolute/path/to/TraceHound/scripts/guardrail_hook.py --platform claude-code --event-type post_tool_use --mode layered --judge heuristic --server-url http://127.0.0.1:8000 --adapter-json",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python /absolute/path/to/TraceHound/scripts/guardrail_hook.py --platform claude-code --event-type pre_reply --mode layered --judge heuristic --server-url http://127.0.0.1:8000 --adapter-json",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

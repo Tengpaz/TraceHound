@@ -1,0 +1,162 @@
+{
+  "annotation": {
+    "accepted": 1000,
+    "backend": "api",
+    "checkpoint_dir": "data/release/AgentDoG1.0-FineGrained-Unsafe-SourceReason-1000/metadata/_source_reason_checkpoints",
+    "concurrency": 6,
+    "fallback_concurrency": 6,
+    "fallback_ran": false,
+    "max_retries": 2,
+    "model": "openai/gpt-5.5",
+    "pass_rate": 1.0,
+    "rejected": 0,
+    "rejected_error_kinds": {},
+    "requested": 1000,
+    "retry_rejected": true,
+    "source_policy": "raw",
+    "temperature": 0.0
+  },
+  "checks": {
+    "annotations_all_accepted": true,
+    "final_has_no_source_provenance_fields": true,
+    "final_labels_unsafe": true,
+    "final_reasons_non_empty": true,
+    "final_source_labels_valid": true,
+    "no_safe_benign_none_taxonomy": true,
+    "taxonomy_labels_valid": true,
+    "train_row_count_matches_requested": true
+  },
+  "pass": true,
+  "preparation": {
+    "duplicate_stats": {
+      "full_record": {
+        "duplicate_extra_rows": 0,
+        "duplicate_groups": 0,
+        "max_group": 1,
+        "unique": 4000
+      },
+      "instruction": {
+        "duplicate_extra_rows": 0,
+        "duplicate_groups": 0,
+        "max_group": 1,
+        "unique": 4000
+      },
+      "normalized_trajectory": {
+        "duplicate_extra_rows": 0,
+        "duplicate_groups": 0,
+        "max_group": 1,
+        "unique": 4000
+      },
+      "trajectory_block": {
+        "duplicate_extra_rows": 0,
+        "duplicate_groups": 0,
+        "max_group": 1,
+        "unique": 4000
+      }
+    },
+    "kept": 4000,
+    "mapped_label_counts": {
+      "failure_mode": {
+        "choosing_malicious_tool": 316,
+        "failure_to_validate_tool_outputs": 276,
+        "flawed_planning_or_reasoning": 307,
+        "generation_of_harmful_offensive_content": 280,
+        "generation_of_malicious_executables": 230,
+        "incorrect_tool_parameters": 262,
+        "inefficient_or_wasteful_execution": 236,
+        "insecure_interaction_or_execution": 264,
+        "instruction_for_harmful_illegal_activity": 356,
+        "procedural_deviation_or_inaction": 299,
+        "provide_inaccurate_misleading_or_unverified_information": 275,
+        "tool_misuse_in_specific_context": 302,
+        "unauthorized_information_disclosure": 287,
+        "unconfirmed_or_overprivileged_action": 310
+      },
+      "harm_type": {
+        "fairness_equity_and_allocative_harm": 362,
+        "financial_and_economic_harm": 463,
+        "functional_and_opportunity_harm": 358,
+        "info_ecosystem_and_societal_harm": 484,
+        "physical_and_health_harm": 389,
+        "privacy_and_confidentiality_harm": 397,
+        "psychological_and_emotional_harm": 412,
+        "public_service_and_resource_harm": 368,
+        "reputation_and_interpersonal_harm": 381,
+        "security_and_system_integrity_harm": 386
+      },
+      "risk_source": {
+        "corrupted_tool_feedback": 511,
+        "direct_prompt_injection": 603,
+        "indirect_prompt_injection": 346,
+        "inherent_agent_failures": 310,
+        "malicious_tool_execution": 729,
+        "malicious_user_instruction_or_jailbreak": 656,
+        "tool_description_injection": 353,
+        "unreliable_or_misinformation": 492
+      }
+    },
+    "raw_label_counts": {
+      "failure_mode": {
+        "Choosing Malicious Tool": 316,
+        "Failure to Validate Tool Outputs": 276,
+        "Flawed Planning or Reasoning": 307,
+        "Generation of Harmful/Offensive Content": 280,
+        "Generation of Malicious Executables": 230,
+        "Incorrect Tool Parameters": 262,
+        "Inefficient or Wasteful Execution": 236,
+        "Insecure Execution or Interaction": 264,
+        "Instruction for Harmful/Illegal Activity": 356,
+        "Procedural Deviation or Inaction": 299,
+        "Provide Inaccurate, Misleading, or Unverified Information": 275,
+        "Tool Misuse in Specific Context": 302,
+        "Unauthorized Information Disclosure": 287,
+        "Unconfirmed or Over-privileged Action": 310
+      },
+      "harm_type": {
+        "Fairness, Equity, and Allocative Harm": 362,
+        "Financial & Economic Harm": 463,
+        "Functional & Opportunity Harm": 358,
+        "Info-ecosystem & Societal Harm": 484,
+        "Physical & Health Harm": 389,
+        "Privacy & Confidentiality Harm": 397,
+        "Psychological & Emotional Harm": 412,
+        "Public Service & Resource Harm": 368,
+        "Reputational & Interpersonal Harm": 381,
+        "Security & System Integrity Harm": 386
+      },
+      "risk_source": {
+        "Corrupted Tool Feedback": 511,
+        "Direct Prompt Injection": 603,
+        "Indirect Prompt Injection": 346,
+        "Inherent Agent/LLM Failures": 310,
+        "Malicious Tool Execution": 729,
+        "Malicious User Instruction or Jailbreak": 656,
+        "Tool Description Injection": 353,
+        "Unreliable or Mis-information": 492
+      }
+    },
+    "rejected": 0,
+    "rejected_samples": [],
+    "source_records": 4000
+  },
+  "samples": {
+    "annotations": 1000,
+    "base_rows": 4000,
+    "rejected_annotations": 0,
+    "requested_sample_size": 1000,
+    "sampled_rows": 1000,
+    "train_rows": 1000
+  },
+  "sampling": {
+    "requested": 1000,
+    "sampled": 1000,
+    "seed": 20260705,
+    "strategy": "maximize_taxonomy_triple_coverage",
+    "unique_triples_available": 1044,
+    "unique_triples_covered": 1000
+  },
+  "source_label_counts": {
+    "false_refusal": 222,
+    "unsafe": 778
+  }
+}

@@ -32,7 +32,9 @@ def test_official_exports_use_agentdog15_prompt_source():
 def test_official_manifest_marks_synthetic_generator_as_surrogate(tmp_path):
     manifest = official_manifest(repo_dir=tmp_path / "missing_repo", data_root=tmp_path / "datasets")
 
+    assert manifest["official_datasets"]["agentdog10_training"] == OFFICIAL_DATASETS["agentdog10_training"]
     assert manifest["official_datasets"]["app1_sft"] == OFFICIAL_DATASETS["app1_sft"]
+    assert "binary_safety" in manifest["official_dataset_files"]["agentdog10_training"]
     assert PUBLIC_RELEASE_LIMITATIONS["llm_synthesis_engine_public"] is False
     assert manifest["synthetic_generator_status"] == "surrogate_not_official"
     assert all(not item["present"] for item in manifest["data_presence"].values())

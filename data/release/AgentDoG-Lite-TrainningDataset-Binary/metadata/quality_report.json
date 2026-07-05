@@ -1,0 +1,15 @@
+{
+  "json_judgment_outputs": 4000,
+  "labels": {
+    "safe": 2000,
+    "unsafe": 2000
+  },
+  "missing_trajectory": 0,
+  "old_bare_safe_unsafe_outputs": 0,
+  "old_display_taxonomy_labels_in_prompt": 0,
+  "old_instruction_markers": 0,
+  "pass": true,
+  "prompt_taxonomy_machine_labels": 4000,
+  "rejected": 0,
+  "samples": 4000
+}

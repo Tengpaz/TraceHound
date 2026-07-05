@@ -1,0 +1,74 @@
+{
+  "conclusion": "AgentDoG1.0 BinarySafety is suitable as binary training base after target-format conversion. Do not mix AgentDoG1.0 FineGrainedTaxonomy rows into the binary-only dataset, and do not train on summer_camp_ATBench300 or summer_camp_rjudge.",
+  "datasets": {
+    "summer_camp_ATBench300": {
+      "keys": [
+        "contents",
+        "failure_mode",
+        "harm_type",
+        "id",
+        "label",
+        "reason",
+        "risk_source",
+        "source",
+        "tool_used"
+      ],
+      "label_contract": "0=safe, 1=unsafe",
+      "label_counts": {
+        "safe": 150,
+        "unsafe": 150
+      },
+      "notes": [
+        "Includes tool_used, contents, label, risk_source, failure_mode, harm_type, reason, and source.",
+        "Binary label is the supervised target for the AgentDoG-Lite challenge; taxonomy fields are auxiliary."
+      ],
+      "output_contract": {
+        "judgment": [
+          "safe",
+          "unsafe"
+        ],
+        "trailing_comma": false
+      },
+      "path": "external/agentdog_official/datasets/summer_camp_teseset/summer_camp_ATBench300.json",
+      "present": true,
+      "rows": 300,
+      "sha256": "2c392f278145b970dd87cfb3a9028c0ea10c3aecb32816103b419be73df53532"
+    },
+    "summer_camp_rjudge": {
+      "keys": [
+        " ",
+        "contents",
+        "goal",
+        "id",
+        "label",
+        "profile",
+        "risk_description",
+        "risk_type",
+        "scenario"
+      ],
+      "label_contract": "0=safe, 1=unsafe",
+      "label_counts": {
+        "safe": 266,
+        "unsafe": 298
+      },
+      "notes": [
+        "Includes R-Judge-style scenario/profile/goal/contents plus risk_description and risk_type.",
+        "No AgentDoG 8/14/10 taxonomy labels are guaranteed; train binary judgment separately from taxonomy tasks."
+      ],
+      "output_contract": {
+        "judgment": [
+          "safe",
+          "unsafe"
+        ],
+        "trailing_comma": false
+      },
+      "path": "external/agentdog_official/datasets/summer_camp_teseset/summer_camp_rjudge.json",
+      "present": true,
+      "rows": 564,
+      "sha256": "3ecc6da2f1c3746ec1fadab654d2c3615073004847569318fcf93778493287cf"
+    }
+  },
+  "enabled": true,
+  "generated_at": "2026-07-04T11:41:11.670946+00:00",
+  "source_dataset": "AI45Research/2026_summer_camp_teseset"
+}

@@ -1,0 +1,22 @@
+# AgentDoG official data-flow builder defaults.
+# Keep this dependency-free YAML subset simple: scalar values and inline lists only.
+
+source_mode: agentdog10
+official_root: external/agentdog_official/datasets
+output_root: data
+download_official: false
+annotate_cot: false
+cot_backend: api
+cot_modes: [coarse, finegrained, unified]
+cot_concurrency: 1
+cot_max_retries: 1
+cot_temperature: 0.0
+checkpoint_dir:
+resume: false
+pause_file:
+allow_atbench_cot_distill: false
+limit:
+split_train_ratio: 0.8
+split_eval_ratio: 0.1
+split_test_ratio: 0.1
+split_seed: 20260701

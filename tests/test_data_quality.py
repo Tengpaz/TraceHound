@@ -101,7 +101,7 @@ def test_tracehound_sft_prompt_is_taxonomy_grounded_json_task():
     assert '"risk_source": "none | one TraceHound risk_source machine label"' in prompt
     assert "malicious_user_instruction_or_jailbreak" in prompt
     assert "unconfirmed_or_over_privileged_action" in prompt
-    assert "privacy_confidentiality_harm" in prompt
+    assert "privacy_and_confidentiality_harm" in prompt
     assert RiskReport.model_validate(target)
 
 

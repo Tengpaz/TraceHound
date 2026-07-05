@@ -1,0 +1,55 @@
+{
+  "annotation": {
+    "accepted": 1000,
+    "backend": "api",
+    "checkpoint_dir": "data/release/AgentDoG1.0-FineGrained-Unsafe-SourceReason-1000/metadata/_source_reason_checkpoints",
+    "concurrency": 6,
+    "fallback_concurrency": 6,
+    "fallback_ran": false,
+    "max_retries": 2,
+    "model": "openai/gpt-5.5",
+    "pass_rate": 1.0,
+    "rejected": 0,
+    "rejected_error_kinds": {},
+    "requested": 1000,
+    "retry_rejected": true,
+    "source_policy": "raw",
+    "temperature": 0.0
+  },
+  "artifacts": {
+    "annotations_jsonl": "data/release/AgentDoG1.0-FineGrained-Unsafe-SourceReason-1000/annotations.jsonl",
+    "manifest": "data/release/AgentDoG1.0-FineGrained-Unsafe-SourceReason-1000/metadata/manifest.json",
+    "quality_report": "data/release/AgentDoG1.0-FineGrained-Unsafe-SourceReason-1000/metadata/quality_report.json",
+    "taxonomy_full_json": "data/release/AgentDoG1.0-FineGrained-Unsafe-SourceReason-1000/taxonomy_full.json",
+    "taxonomy_full_jsonl": "data/release/AgentDoG1.0-FineGrained-Unsafe-SourceReason-1000/taxonomy_full.jsonl",
+    "train_json": "data/release/AgentDoG1.0-FineGrained-Unsafe-SourceReason-1000/train.json",
+    "train_jsonl": "data/release/AgentDoG1.0-FineGrained-Unsafe-SourceReason-1000/train.jsonl"
+  },
+  "created_at": "2026-07-04T17:52:37.602425+00:00",
+  "dataset_name": "AgentDoG1.0-FineGrained-Unsafe-SourceReason-1000",
+  "notes": [
+    "Final train rows intentionally omit source_dataset/source_config/source_index.",
+    "The final source field is the unsafe/false_refusal LLM label, not source provenance metadata.",
+    "Official taxonomy display labels are remapped to the requested snake_case contract locally."
+  ],
+  "rows": {
+    "annotations": 1000,
+    "rejected_annotations": 0,
+    "sampled_for_annotation": 1000,
+    "taxonomy_full": 4000,
+    "train": 1000
+  },
+  "sampling": {
+    "requested": 1000,
+    "sampled": 1000,
+    "seed": 20260705,
+    "strategy": "maximize_taxonomy_triple_coverage",
+    "unique_triples_available": 1044,
+    "unique_triples_covered": 1000
+  },
+  "schema_version": "tracehound.agentdog_finegrained_source_reason.v1",
+  "source_config": "AgentDoG-FineGrainedTaxonomy",
+  "source_dataset": "AI45Research/AgentDoG1.0-Training-Data",
+  "source_file": "external/agentdog_official/datasets/agentdog10_training/AgentDoG-FineGrainedTaxonomy/train.json",
+  "source_sha256": "0ee0356677c3ffe5f5c83db62191efc7c07a6a8ac1d20e88a326c53faeb8ff6c"
+}

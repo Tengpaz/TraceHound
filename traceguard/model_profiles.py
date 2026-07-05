@@ -39,6 +39,11 @@ def default_profile_name(provider: str = "huggingface", path: str | Path | None 
     return str(data.get("default_local_profile") or "")
 
 
+def default_guard_profile_name(path: str | Path | None = None) -> str:
+    data = load_model_profiles(path)
+    return str(os.getenv("TRACEHOUND_GUARD_MODEL_PROFILE") or data.get("default_guard_profile") or data.get("default_local_profile") or "")
+
+
 def resolve_model_profile(name: str | None = None, path: str | Path | None = None) -> Dict[str, Any]:
     data = load_model_profiles(path)
     profile_name = name or os.getenv("TRACEHOUND_MODEL_PROFILE") or data.get("default_local_profile")
@@ -55,6 +60,10 @@ def profile_model_id(profile: Dict[str, Any]) -> str:
     provider = profile.get("provider")
     if provider == "openai_compatible":
         return str(profile.get("model") or "")
+    local_path = profile.get("local_path")
+    if local_path:
+        path = Path(str(local_path))
+        return str(path if path.is_absolute() else ROOT / path)
     return str(profile.get("hf_model_id") or profile.get("model") or "")
 
 
@@ -64,7 +73,9 @@ def profile_summary(profile: Dict[str, Any]) -> Dict[str, Any]:
         "provider": profile.get("provider", ""),
         "family": profile.get("family", ""),
         "role": profile.get("role", ""),
+        "task": profile.get("task", ""),
         "model_id": profile_model_id(profile),
+        "local_path": str(profile.get("local_path") or ""),
         "recommended_use": profile.get("recommended_use", ""),
         "smoke": bool(profile.get("smoke", False)),
         "formal_lora": bool(profile.get("formal_lora", False)),

@@ -12,6 +12,9 @@ from traceguard.taxonomy import (
     HARM_TYPE_LABELS,
     RISK_SOURCE_LABELS,
     SAFETY_LABELS,
+    normalize_failure_mode,
+    normalize_harm_type,
+    normalize_risk_source,
 )
 
 
@@ -87,6 +90,7 @@ class RiskReport(TraceModel):
     @field_validator("risk_source")
     @classmethod
     def valid_risk_source(cls, value: str) -> str:
+        value = normalize_risk_source(value)
         if value not in RISK_SOURCE_LABELS:
             raise ValueError(f"unknown risk_source: {value}")
         return value
@@ -94,6 +98,7 @@ class RiskReport(TraceModel):
     @field_validator("failure_mode")
     @classmethod
     def valid_failure_mode(cls, value: str) -> str:
+        value = normalize_failure_mode(value)
         if value not in FAILURE_MODE_LABELS:
             raise ValueError(f"unknown failure_mode: {value}")
         return value
@@ -101,6 +106,7 @@ class RiskReport(TraceModel):
     @field_validator("harm_type")
     @classmethod
     def valid_harm_type(cls, value: str) -> str:
+        value = normalize_harm_type(value)
         if value not in HARM_TYPE_LABELS:
             raise ValueError(f"unknown harm_type: {value}")
         return value

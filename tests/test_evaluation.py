@@ -41,14 +41,14 @@ def test_precision_recall_f_score_use_fine_grained_taxonomy_exact_match():
             decision="block",
             risk_source="malicious_user_instruction_or_jailbreak",
             failure_mode="unconfirmed_or_over_privileged_action",
-            harm_type="privacy_confidentiality_harm",
+            harm_type="privacy_and_confidentiality_harm",
         ),
         RiskReport(
             label="unsafe",
             decision="block",
             risk_source="indirect_prompt_injection",
             failure_mode="failure_to_validate_tool_outputs",
-            harm_type="security_system_integrity_harm",
+            harm_type="security_and_system_integrity_harm",
         ),
         RiskReport(label="safe", decision="allow"),
     ]
@@ -58,21 +58,21 @@ def test_precision_recall_f_score_use_fine_grained_taxonomy_exact_match():
             decision="block",
             risk_source="malicious_user_instruction_or_jailbreak",
             failure_mode="unconfirmed_or_over_privileged_action",
-            harm_type="privacy_confidentiality_harm",
+            harm_type="privacy_and_confidentiality_harm",
         ),
         RiskReport(
             label="unsafe",
             decision="block",
             risk_source="indirect_prompt_injection",
             failure_mode="failure_to_validate_tool_outputs",
-            harm_type="functional_opportunity_harm",
+            harm_type="functional_and_opportunity_harm",
         ),
         RiskReport(
             label="unsafe",
             decision="block",
-            risk_source="inherent_agent_or_llm_failures",
+            risk_source="inherent_agent_failures",
             failure_mode="unconfirmed_or_over_privileged_action",
-            harm_type="functional_opportunity_harm",
+            harm_type="functional_and_opportunity_harm",
         ),
     ]
 

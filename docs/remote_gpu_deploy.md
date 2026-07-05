@@ -22,6 +22,7 @@ TRACEHOUND_RUN_SMOKE=1
 TRACEHOUND_MODEL_PROFILE=internlm3-8b-instruct
 TRACEHOUND_INSTALL_PREFERENCE=0
 TRACEHOUND_INSTALL_QLORA=0
+TRACEHOUND_INSTALL_OFFICIAL=1
 TRACEHOUND_PREINSTALL_NATIVE_DEPS=1
 TRACEHOUND_TMPDIR=$HOME/.cache/tracehound/tmp
 ```
@@ -33,6 +34,22 @@ bash scripts/bootstrap_remote.sh
 ```
 
 The bootstrap script creates `tracehound-gpu`, installs CUDA PyTorch wheels unless disabled, installs TraceHound with dev/train extras, runs `scripts/gpu_doctor.py`, and runs the smoke path.
+
+## Sync From Local Mac
+
+When the GitHub clone is unavailable or you want to mirror the current local workspace to the cluster path, run from the Mac:
+
+```bash
+TRACEHOUND_REMOTE_TARGET=ailab-p:/mnt/petrelfs/lichunxiao/TraceHound \
+  bash scripts/sync_remote.sh
+```
+
+The sync excludes `.git`, `.env` from rsync, caches, generated data, model checkpoints, and reports. If a local `.env` exists, the script copies it separately to the remote path and runs `chmod 600` without printing secrets. To also run bootstrap and the official data smoke:
+
+```bash
+TRACEHOUND_REMOTE_BOOTSTRAP=1 TRACEHOUND_REMOTE_OFFICIAL_SMOKE=1 \
+  bash scripts/sync_remote.sh
+```
 
 If the login node does not expose GPUs, run GPU diagnostics and training through Slurm:
 
@@ -108,6 +125,9 @@ The bundle excludes `.git`, `.env`, runtime reports, caches, model checkpoints, 
 python scripts/gpu_doctor.py --strict
 python scripts/list_model_profiles.py
 bash scripts/smoke_remote.sh
+python scripts/prepare_agentdog_official.py --download-dataset agentdog10_training --manifest reports/agentdog_official_manifest.json
+python scripts/build_agentdog_data.py --source agentdog10 --limit 20 --no-annotate-cot
+python scripts/build_agentdog_data.py --source agentdog10 --limit 2 --annotate-cot --cot-backend stub
 python scripts/generate_data.py --config configs/generation.yaml --out data
 python scripts/run_experiments.py --data data/synthetic_eval.jsonl --no-api
 python scripts/generate_report.py --input reports/experiments.json --output reports/experiment_report.md

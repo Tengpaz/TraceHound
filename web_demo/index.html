@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>TraceHound</title>
-    <link rel="stylesheet" href="/static/styles.css?v=batch-dataset-v1" />
+    <link rel="stylesheet" href="/static/styles.css?v=project-page-ppt-v1" />
   </head>
   <body>
     <div class="backdrop" aria-hidden="true"></div>
@@ -23,60 +23,353 @@
     </nav>
 
     <main class="app-shell">
-      <section id="homePage" class="page active">
-        <div class="hero-grid">
-          <section class="hero-copy">
-            <p class="eyebrow">TRACE / COMPRESS / GUARD</p>
-            <h1>TraceHound</h1>
-            <p class="hero-slogan" data-i18n="home.slogan">让每一次 Agent 行动都留下可审计的安全证据</p>
+      <section id="homePage" class="page active project-deck">
+        <nav class="project-toc" aria-label="Project slide navigation">
+          <a href="#home" data-slide-link="home" data-i18n="home.tocCover">封面</a>
+          <a href="#data" data-slide-link="data" data-i18n="home.tocData">数据处理</a>
+          <a href="#method" data-slide-link="method" data-i18n="home.tocMethod">方法介绍</a>
+          <a href="#results" data-slide-link="results" data-i18n="home.tocResults">实验结果</a>
+          <a href="#fine" data-slide-link="fine" data-i18n="home.tocFine">细粒度+GRPO</a>
+          <a href="#conclusion" data-slide-link="conclusion" data-i18n="home.tocConclusion">总结与任务</a>
+        </nav>
+
+        <section id="home" class="project-slide project-hero" aria-labelledby="projectTitle" data-slide-title="TraceHound">
+          <div class="project-hero-copy">
+            <p class="eyebrow">AGENTDOG 1.0 / SFT / GRPO / TRACE SAFETY</p>
+            <h1 id="projectTitle">TraceHound</h1>
+            <p class="hero-slogan" data-i18n="home.slogan">Agent 轨迹安全评测与细粒度风险定位项目页</p>
             <div class="neon-bars" aria-hidden="true">
               <span></span><span></span><span></span>
             </div>
-            <p class="hero-meta" data-i18n="home.meta">AgentDoG taxonomy · CPU-first baseline · API validation · local model training hooks</p>
+            <p class="hero-meta" data-i18n="home.meta">围绕 AgentDoG1.0 训练数据完成清洗、Reason 标注增强、全参数 SFT / LoRA 对比，以及二分类和三因素细粒度分类评测。</p>
             <div class="hero-actions">
-              <button class="primary-button" type="button" data-go="evaluate" data-i18n="home.startEval">开始评估</button>
-              <button class="secondary-button" type="button" data-go="model" data-i18n="home.openModel">模型调配</button>
-              <button class="secondary-button" type="button" data-go="enchant" data-i18n="home.openEnchant">安全附魔</button>
+              <a class="primary-button anchor-button" href="#results" data-i18n="home.viewResults">查看实验结果</a>
+              <a class="secondary-button anchor-button" href="#data" data-i18n="home.viewData">数据处理流程</a>
+              <button class="secondary-button" type="button" data-go="evaluate" data-i18n="home.startEval">打开评估台</button>
             </div>
-          </section>
-          <section class="signal-board" aria-label="TraceHound telemetry">
-            <div class="signal-line">
-              <span>unsafe_recall</span>
-              <strong>1.000</strong>
+          </div>
+          <aside class="project-snapshot" aria-label="Project result snapshot">
+            <div class="snapshot-heading">
+              <span data-i18n="home.snapshot">Result Snapshot</span>
+              <strong>TraceHound-Basev1</strong>
             </div>
-            <div class="signal-line">
-              <span>taxonomy</span>
-              <strong>8 / 14 / 10</strong>
-            </div>
-            <div class="signal-line">
-              <span>datasets</span>
-              <strong id="homeDatasetCount">16 seed cases</strong>
+            <div class="snapshot-grid">
+              <article class="snapshot-metric">
+                <span data-i18n="home.metricBinary">二分类准确率</span>
+                <strong>0.7303</strong>
+                <small data-i18n="home.metricBinaryDelta">较基座 +0.2118</small>
+              </article>
+              <article class="snapshot-metric">
+                <span data-i18n="home.metricF1">二分类 F1</span>
+                <strong>0.7791</strong>
+                <small data-i18n="home.metricF1Delta">全参数 SFT 最优</small>
+              </article>
+              <article class="snapshot-metric">
+                <span data-i18n="home.metricFine">ATBench 细粒度准确率</span>
+                <strong>0.6433</strong>
+                <small data-i18n="home.metricFineDelta">无效率降至 0</small>
+              </article>
+              <article class="snapshot-metric">
+                <span data-i18n="home.metricRjudge">R-Judge 细粒度准确率</span>
+                <strong>0.6259</strong>
+                <small data-i18n="home.metricRjudgeDelta">格式无效率 0.0018</small>
+              </article>
             </div>
             <div class="terminal-strip">
-              <span>$ tracehound guard --mode layered</span>
-              <span>risk_span.compress()</span>
-              <span>decision.block_if_needed()</span>
+              <span>clean_prompt(json_schema=True)</span>
+              <span>merge(Safe_binary, Unsafe_finegrained)</span>
+              <span>train(full_sft) &gt; train(lora) · optimize(grpo_reasoning)</span>
             </div>
-          </section>
-        </div>
+          </aside>
+        </section>
 
-        <section class="home-panels">
-          <article class="glass-panel">
-            <h2 data-i18n="home.panel1.title">轨迹级诊断</h2>
-            <p data-i18n="home.panel1.body">从用户目标、工具调用、外部 observation、最终回答中抽取风险证据。</p>
-          </article>
-          <article class="glass-panel">
-            <h2 data-i18n="home.panel2.title">低算力优先</h2>
-            <p data-i18n="home.panel2.body">默认离线规则与压缩启发式，可接入第三方 API，不强依赖 GPU。</p>
-          </article>
-          <article class="glass-panel">
-            <h2 data-i18n="home.panel3.title">赛前可调配</h2>
-            <p data-i18n="home.panel3.body">支持大规模数据生成、训练预检、模型运行方式切换和报告输出。</p>
-          </article>
-          <article class="glass-panel">
-            <h2 data-i18n="home.panel4.title">安全能力附魔</h2>
-            <p data-i18n="home.panel4.body">用当前 Guard Model 过滤、打分和奖励其他基座模型，生成更安全的策略模型。</p>
-          </article>
+        <section id="data" class="project-section project-slide" aria-labelledby="dataTitle" data-slide-title="Data Processing">
+          <div class="section-title-row">
+            <div>
+              <p class="eyebrow">DATA PROCESSING</p>
+              <h2 id="dataTitle" data-i18n="home.dataTitle">数据处理方法、流程、结果</h2>
+            </div>
+            <span data-i18n="home.dataTag">从官方训练集到可用于 Reason 分析的高质量数据</span>
+          </div>
+
+          <div class="data-grid">
+            <article class="glass-panel project-card">
+              <h3 data-i18n="home.dataProvidedTitle">初始数据结构</h3>
+              <ul class="clean-list">
+                <li data-i18n="home.dataProvided1">训练数据包含基础二分类任务数据。</li>
+                <li data-i18n="home.dataProvided2">训练数据包含三因素细粒度分类任务数据。</li>
+                <li data-i18n="home.dataProvided3">评测数据额外包含 Label、三因素标签、Reason 和 Source。</li>
+              </ul>
+            </article>
+            <article class="glass-panel project-card">
+              <h3 data-i18n="home.dataEvalTitle">评测字段含义</h3>
+              <dl class="compact-dl">
+                <dt>Label</dt>
+                <dd data-i18n="home.dataEvalLabel">Safe / Unsafe 分别以 0 / 1 表示。</dd>
+                <dt>Reason</dt>
+                <dd data-i18n="home.dataEvalReason">解释模型分类理由，用于分类+理由分析任务。</dd>
+                <dt>Source</dt>
+                <dd data-i18n="home.dataEvalSource">描述风险来源，包括 Safe、Unsafe、Benign、False_Refusal。</dd>
+              </dl>
+              <div class="source-taxonomy" aria-label="Source label definitions">
+                <div class="source-item safe-source">
+                  <strong>Safe</strong>
+                  <span data-i18n="home.sourceSafe">轨迹有风险，但模型正确防御。</span>
+                </div>
+                <div class="source-item unsafe-source">
+                  <strong>Unsafe</strong>
+                  <span data-i18n="home.sourceUnsafe">轨迹有风险，且模型未采取任何防御手段。</span>
+                </div>
+                <div class="source-item benign-source">
+                  <strong>Benign</strong>
+                  <span data-i18n="home.sourceBenign">轨迹本身无风险。</span>
+                </div>
+                <div class="source-item refusal-source">
+                  <strong>False_Refusal</strong>
+                  <span data-i18n="home.sourceFalseRefusal">模型尝试防御但未成功，最终造成风险执行。</span>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div class="process-flow" aria-label="Dataset processing flow">
+            <article class="flow-step">
+              <span>01</span>
+              <h3 data-i18n="home.flow1Title">保留高质量官方数据</h3>
+              <p data-i18n="home.flow1Body">优先使用官方二分类训练集中的 Safe 部分和三因素细粒度训练集中的 Unsafe 部分，降低 LLM 标注噪声。</p>
+            </article>
+            <article class="flow-step">
+              <span>02</span>
+              <h3 data-i18n="home.flow2Title">补齐 Reason 与三因素标签</h3>
+              <p data-i18n="home.flow2Body">对 Safe 轨迹补充三因素+Reason；对 Unsafe 细粒度轨迹补充 Reason。Safe 的三因素标注相对简单，标注风险更低。</p>
+            </article>
+            <article class="flow-step">
+              <span>03</span>
+              <h3 data-i18n="home.flow3Title">筛选合并训练集</h3>
+              <p data-i18n="home.flow3Body">抛弃二分类训练集中的 Unsafe 轨迹，直接合并细粒度 Unsafe 数据，形成更完整的三因素+Reason 数据集。</p>
+            </article>
+            <article class="flow-step">
+              <span>04</span>
+              <h3 data-i18n="home.flow4Title">清洗格式与重复样本</h3>
+              <p data-i18n="home.flow4Body">统一 JSON 输出 Prompt，规范三因素标签大小写和间隔符，并处理二分类数据中约 2000 条重复数据。</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="method" class="project-section project-slide" aria-labelledby="methodTitle" data-slide-title="Method">
+          <div class="section-title-row">
+            <div>
+              <p class="eyebrow">METHOD</p>
+              <h2 id="methodTitle" data-i18n="home.methodTitle">方法介绍</h2>
+            </div>
+            <span data-i18n="home.methodTag">用官方训练数据微调小模型，提高特定评测任务效果</span>
+          </div>
+
+          <div class="method-grid">
+            <article class="method-panel">
+              <h3 data-i18n="home.methodBinaryTitle">二分类安全判定</h3>
+              <p data-i18n="home.methodBinaryBody">以 Qwen3.5-0.8B 为基座，对基础 Safe / Unsafe 分类任务分别进行全参数 SFT 与 LoRA 微调，并比较准确率、F1、格式无效率和输出长度。</p>
+            </article>
+            <article class="method-panel">
+              <h3 data-i18n="home.methodFineTitle">三因素细粒度分类</h3>
+              <p data-i18n="home.methodFineBody">围绕 Risk Source、Failure Mode、Harm Type 三个维度进行全参数 SFT，使模型能定位轨迹危险因素，而不只给出粗粒度安全标签。</p>
+            </article>
+            <article class="method-panel">
+              <h3 data-i18n="home.methodReasonTitle">Reason 分析增强</h3>
+              <p data-i18n="home.methodReasonBody">在数据构造阶段补齐 Reason 字段，让模型学习分类理由与风险证据之间的对应关系，同时通过清洗和筛选降低标注误差。</p>
+            </article>
+            <article class="method-panel">
+              <h3 data-i18n="home.methodGrpoTitle">GRPO 强化优化</h3>
+              <p data-i18n="home.methodGrpoBody">针对三因素+Reason 推理任务开展 GRPO 强化学习训练，奖励侧重 JSON 有效性、三因素一致性和 Reason 证据对齐。</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="results" class="project-section project-slide" aria-labelledby="resultsTitle" data-slide-title="Binary Results">
+          <div class="section-title-row">
+            <div>
+              <p class="eyebrow">EXPERIMENT RESULTS</p>
+              <h2 id="resultsTitle" data-i18n="home.resultsTitle">实验结果展示分析</h2>
+            </div>
+            <span data-i18n="home.resultsTag">SFT 显著改善分类准确性和 JSON 格式稳定性</span>
+          </div>
+
+          <div class="result-block">
+            <div class="result-heading">
+              <h3 data-i18n="home.binaryResultTitle">二分类任务：全参数 SFT 优于 LoRA</h3>
+              <p data-i18n="home.binaryResultBody">全参数 SFT 将准确率从 0.5185 提升到 0.7303，F1 从 0.6829 提升到 0.7791；LoRA 有提升但幅度有限，且出现 0.0067 的无效率。</p>
+            </div>
+            <div class="table-wrap">
+              <table class="result-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="home.tableModel">模型</th>
+                    <th data-i18n="home.tableAcc">准确率</th>
+                    <th>F1</th>
+                    <th data-i18n="home.tableInvalid">无效率</th>
+                    <th data-i18n="home.tableTokens">Output Tokens mean / max / min / median</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Qwen3.5-0.8B</td>
+                    <td>0.5185</td>
+                    <td>0.6829</td>
+                    <td>0</td>
+                    <td>13 / 13 / 13 / 13</td>
+                  </tr>
+                  <tr class="highlight-row">
+                    <td>TraceHound-Basev1</td>
+                    <td>0.7303</td>
+                    <td>0.7791</td>
+                    <td>0</td>
+                    <td>13 / 13 / 13 / 13</td>
+                  </tr>
+                  <tr>
+                    <td>TraceHound-LoRAv1</td>
+                    <td>0.6767</td>
+                    <td>0.7188</td>
+                    <td>0.0067</td>
+                    <td>13.12 / 32 / 13 / 13</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="fine" class="project-section project-slide" aria-labelledby="fineTitle" data-slide-title="Fine-Grained + GRPO">
+          <div class="result-block">
+            <div class="result-heading">
+              <h3 id="fineTitle" data-i18n="home.fineResultTitle">三因素任务：准确率与格式规范性提升明显</h3>
+              <p data-i18n="home.fineResultBody">全参数 SFT 在 ATBench 和 R-Judge 上均明显降低无效率；R-Judge 的 F1 下降主要来自基座模型低准确率、高无效率以及偏向 Unsafe 的召回结构带来的指标优势。</p>
+            </div>
+            <div class="table-wrap">
+              <table class="result-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="home.tableBenchmark">评测集</th>
+                    <th data-i18n="home.tableModel">模型</th>
+                    <th data-i18n="home.tableAcc">准确率</th>
+                    <th>F1</th>
+                    <th data-i18n="home.tableInvalid">无效率</th>
+                    <th data-i18n="home.tableTokens">Output Tokens mean / max / min / median</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>ATBench</td>
+                    <td>Qwen3.5-0.8B</td>
+                    <td>0.1367</td>
+                    <td>0.2897</td>
+                    <td>0.7200</td>
+                    <td>-</td>
+                  </tr>
+                  <tr class="highlight-row">
+                    <td>ATBench</td>
+                    <td>AgentDoG1.0-Qwen3.5-0.8B</td>
+                    <td>0.6433</td>
+                    <td>0.7116</td>
+                    <td>0.0000</td>
+                    <td>34.79 / 40 / 28 / 34.5</td>
+                  </tr>
+                  <tr>
+                    <td>R-Judge</td>
+                    <td>Qwen3.5-0.8B</td>
+                    <td>0.2571</td>
+                    <td>0.6259</td>
+                    <td>0.7074</td>
+                    <td>-</td>
+                  </tr>
+                  <tr class="highlight-row">
+                    <td>R-Judge</td>
+                    <td>AgentDoG1.0-Qwen3.5-0.8B</td>
+                    <td>0.6259</td>
+                    <td>0.4903</td>
+                    <td>0.0018</td>
+                    <td>30.86 / 39 / 20 / 30</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="result-block">
+            <div class="result-heading">
+              <h3 data-i18n="home.dimensionTitle">三因素维度拆解</h3>
+              <p data-i18n="home.dimensionBody">SFT 在 Risk Source、Failure Mode、Harm Type 三个维度上都带来准确率提升，其中 Harm Type 的 Macro-F1 提升最明显。</p>
+            </div>
+            <div class="table-wrap">
+              <table class="result-table compact-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="home.tableDimension">维度</th>
+                    <th>Baseline Acc</th>
+                    <th>SFT Acc</th>
+                    <th>Baseline Macro-F1</th>
+                    <th>SFT Macro-F1</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Risk Source</td>
+                    <td>0.0267</td>
+                    <td>0.1833</td>
+                    <td>0.0336</td>
+                    <td>0.1520</td>
+                  </tr>
+                  <tr>
+                    <td>Failure Mode</td>
+                    <td>0.0133</td>
+                    <td>0.2500</td>
+                    <td>0.0125</td>
+                    <td>0.0642</td>
+                  </tr>
+                  <tr>
+                    <td>Harm Type</td>
+                    <td>0.0567</td>
+                    <td>0.2867</td>
+                    <td>0.0638</td>
+                    <td>0.2434</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="grpo-callout">
+            <strong data-i18n="home.grpoCalloutTitle">GRPO RL 优化</strong>
+            <span data-i18n="home.grpoCalloutBody">我们也对三因素+Reason 推理任务运用 GRPO 算法进行了 RL 强化学习训练优化；当前不展示尚未完成评测的数据结果。</span>
+          </div>
+        </section>
+
+        <section id="conclusion" class="project-section project-slide" aria-labelledby="conclusionTitle" data-slide-title="Conclusion">
+          <div class="section-title-row">
+            <div>
+              <p class="eyebrow">CONCLUSION</p>
+              <h2 id="conclusionTitle" data-i18n="home.conclusionTitle">总结结论和任务</h2>
+            </div>
+            <span data-i18n="home.conclusionTag">结论明确：数据质量与全参数 SFT 是当前收益最高的方向</span>
+          </div>
+
+          <div class="conclusion-grid">
+            <article class="glass-panel project-card">
+              <h3 data-i18n="home.conclusionFindings">核心结论</h3>
+              <ul class="clean-list">
+                <li data-i18n="home.finding1">微调显著提升二分类和三因素分类准确率，并稳定 JSON 输出格式。</li>
+                <li data-i18n="home.finding2">全参数 SFT 的调整能力强于 LoRA，更适合当前小模型任务对齐。</li>
+                <li data-i18n="home.finding3">R-Judge F1 异常需要结合无效率、召回倾向和计算基数解释，不能单看单项指标。</li>
+              </ul>
+            </article>
+            <article class="glass-panel project-card">
+              <h3 data-i18n="home.nextTasks">后续任务</h3>
+              <ul class="clean-list">
+                <li data-i18n="home.task1">继续扩充和抽检 Reason 标注，降低 LLM 生成标注噪声。</li>
+                <li data-i18n="home.task2">围绕 R-Judge 做类别均衡、阈值校准和错误样本复盘。</li>
+                <li data-i18n="home.task3">增加 Prompt 清洗、去重、数据合并策略的消融实验。</li>
+                <li data-i18n="home.task4">将最优模型接入评估台，形成可复现的训练-评测-展示闭环。</li>
+              </ul>
+            </article>
+          </div>
         </section>
       </section>
 
@@ -109,6 +402,7 @@
             <span data-i18n="eval.judge">Judge</span>
             <select id="judgeSelect" aria-label="Judge">
               <option value="heuristic">heuristic</option>
+              <option value="local-binary">TraceHound-Base local</option>
               <option value="hybrid">hybrid API</option>
               <option value="api">API only</option>
             </select>
@@ -162,6 +456,84 @@
             <dt data-i18n="eval.pricing">计费</dt>
             <dd id="apiPricing">-</dd>
           </dl>
+        </section>
+
+        <section class="guardrail-lab" aria-label="Online guardrail hook test">
+          <div class="panel-heading compact-heading">
+            <div>
+              <h2 data-i18n="guardrail.title">Online Guardrail Hook 测试台</h2>
+              <p data-i18n="guardrail.subtitle">用真实 agent hook JSON 测试 Claude Code / Codex / OpenClaw 接入输出。</p>
+            </div>
+            <span id="guardrailStatus" class="status-pill" data-i18n="common.ready">就绪</span>
+          </div>
+          <div class="guardrail-grid">
+            <section class="guardrail-editor">
+              <div class="guardrail-controls">
+                <label>
+                  <span data-i18n="guardrail.platform">平台</span>
+                  <select id="guardPlatformSelect" aria-label="Guardrail platform">
+                    <option value="claude-code">Claude Code</option>
+                    <option value="codex">Codex</option>
+                    <option value="openclaw">OpenClaw</option>
+                    <option value="generic">Generic</option>
+                  </select>
+                </label>
+                <label>
+                  <span data-i18n="guardrail.event">事件</span>
+                  <select id="guardEventTypeSelect" aria-label="Guardrail event type">
+                    <option value="auto">auto</option>
+                    <option value="pre_tool_use">pre_tool_use</option>
+                    <option value="post_tool_use">post_tool_use</option>
+                    <option value="pre_reply">pre_reply</option>
+                  </select>
+                </label>
+                <button id="runGuardrailBtn" class="primary-button" type="button" data-i18n="guardrail.run">运行 Hook 测试</button>
+              </div>
+              <div class="sample-actions">
+                <button class="secondary-button" type="button" data-guard-sample="claude-pretool" data-i18n="guardrail.sampleClaude">Claude 工具前</button>
+                <button class="secondary-button" type="button" data-guard-sample="claude-stop" data-i18n="guardrail.sampleStop">Claude 最终回复前</button>
+                <button class="secondary-button" type="button" data-guard-sample="codex-prereply" data-i18n="guardrail.sampleCodex">Codex 轨迹</button>
+                <button class="secondary-button" type="button" data-guard-sample="openclaw-pretool" data-i18n="guardrail.sampleOpenClaw">OpenClaw 工具前</button>
+              </div>
+              <textarea id="guardEventInput" spellcheck="false" aria-label="Guardrail hook JSON input"></textarea>
+            </section>
+            <section class="guardrail-output">
+              <div class="summary-strip">
+                <article class="metric-tile">
+                  <span data-i18n="guardrail.allow">放行</span>
+                  <strong id="guardrailAllow">-</strong>
+                </article>
+                <article class="metric-tile">
+                  <span data-i18n="eval.decision">决策</span>
+                  <strong id="guardrailDecision">-</strong>
+                </article>
+                <article class="metric-tile">
+                  <span data-i18n="guardrail.detected">识别</span>
+                  <strong id="guardrailDetected">-</strong>
+                </article>
+              </div>
+              <dl class="dense-dl guardrail-reason">
+                <dt data-i18n="eval.endpoint">端点</dt>
+                <dd id="guardrailEndpoint">/api/guardrail/event</dd>
+                <dt data-i18n="eval.reason">原因</dt>
+                <dd id="guardrailReason">-</dd>
+              </dl>
+              <div class="guardrail-pre-grid">
+                <section>
+                  <div class="section-title-row">
+                    <h2 data-i18n="guardrail.adapter">平台原生输出</h2>
+                  </div>
+                  <pre id="guardrailAdapterOutput">{}</pre>
+                </section>
+                <section>
+                  <div class="section-title-row">
+                    <h2 data-i18n="guardrail.report">TraceHound 报告</h2>
+                  </div>
+                  <pre id="guardrailReportOutput">{}</pre>
+                </section>
+              </div>
+            </section>
+          </div>
         </section>
 
         <section class="workspace">
@@ -560,6 +932,6 @@
         </section>
       </section>
     </main>
-    <script src="/static/app.js?v=batch-dataset-v1"></script>
+    <script src="/static/app.js?v=project-page-ppt-v1"></script>
   </body>
 </html>

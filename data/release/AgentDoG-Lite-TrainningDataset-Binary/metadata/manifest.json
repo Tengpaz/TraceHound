@@ -1,0 +1,33 @@
+{
+  "artifacts": {
+    "eval_alignment_report": "data/release/AgentDoG-Lite-TrainningDataset-Binary/metadata/eval_alignment_report.json",
+    "messages_train_jsonl": "data/release/AgentDoG-Lite-TrainningDataset-Binary/messages/train.jsonl",
+    "quality_report": "data/release/AgentDoG-Lite-TrainningDataset-Binary/metadata/quality_report.json",
+    "train_json": "data/release/AgentDoG-Lite-TrainningDataset-Binary/train.json",
+    "train_jsonl": "data/release/AgentDoG-Lite-TrainningDataset-Binary/train.jsonl"
+  },
+  "contamination_policy": "The summer-camp test set and R-Judge references are inspected only for schema/label/output alignment; no evaluation samples are included in this training dataset.",
+  "created_at": "2026-07-04T11:41:11.671377+00:00",
+  "dataset_name": "AgentDoG-Lite-TrainningDataset-Binary",
+  "notes": [
+    "AgentDoG1.0 binary labels are preserved exactly.",
+    "The old bare safe/unsafe target is rewritten to pretty strict JSON with a judgment field.",
+    "The prompt preserves the AgentDoG1.0 BinarySafety task and definitions.",
+    "The taxonomy aid labels inside the prompt are rewritten to the summer-camp snake_case label contract.",
+    "The prompt output contract is rewritten to strict JSON with a judgment field."
+  ],
+  "output_contract": {
+    "judgment": [
+      "safe",
+      "unsafe"
+    ],
+    "trailing_comma": false
+  },
+  "rejected": 0,
+  "rows": 4000,
+  "schema_version": "tracehound.agentdog_lite_binary.v1",
+  "source_dataset": "AI45Research/AgentDoG1.0-Training-Data",
+  "source_file": "external/agentdog_official/datasets/agentdog10_training/AgentDoG-BinarySafety/train.json",
+  "source_sha256": "9a86a7cfae59c916431ed675225eb34099b8a089b985d6de38aec19a10616c6d",
+  "source_split": "AgentDoG-BinarySafety/train.json"
+}

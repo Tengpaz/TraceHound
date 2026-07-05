@@ -15,6 +15,7 @@ fi
 ENV_NAME="${TRACEHOUND_ENV_NAME:-tracehound-gpu}"
 PYTHON_VERSION="${TRACEHOUND_PYTHON_VERSION:-3.10}"
 INSTALL_TRAIN="${TRACEHOUND_INSTALL_TRAIN:-1}"
+INSTALL_OFFICIAL="${TRACEHOUND_INSTALL_OFFICIAL:-1}"
 INSTALL_PREFERENCE="${TRACEHOUND_INSTALL_PREFERENCE:-0}"
 INSTALL_QLORA="${TRACEHOUND_INSTALL_QLORA:-0}"
 PREINSTALL_NATIVE_DEPS="${TRACEHOUND_PREINSTALL_NATIVE_DEPS:-1}"
@@ -95,8 +96,15 @@ else
 fi
 
 EXTRAS=".[dev]"
+if [[ "$INSTALL_OFFICIAL" == "1" ]]; then
+  EXTRAS=".[dev,official]"
+fi
 if [[ "$INSTALL_TRAIN" == "1" ]]; then
-  EXTRAS=".[dev,train]"
+  if [[ "$INSTALL_OFFICIAL" == "1" ]]; then
+    EXTRAS=".[dev,official,train]"
+  else
+    EXTRAS=".[dev,train]"
+  fi
 fi
 
 echo "[tracehound] installing project: $EXTRAS"

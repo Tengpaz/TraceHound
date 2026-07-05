@@ -31,3 +31,15 @@ def test_schema_rejects_invalid_taxonomy_label():
     with pytest.raises(ValidationError):
         RiskReport(risk_source="old_label")
 
+
+def test_schema_normalizes_legacy_taxonomy_labels():
+    report = RiskReport(
+        label="unsafe",
+        risk_source="inherent_agent_or_llm_failures",
+        failure_mode="choosing_malicious_tools",
+        harm_type="privacy_confidentiality_harm",
+    )
+
+    assert report.risk_source == "inherent_agent_failures"
+    assert report.failure_mode == "choosing_malicious_tool"
+    assert report.harm_type == "privacy_and_confidentiality_harm"

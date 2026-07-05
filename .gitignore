@@ -21,7 +21,12 @@ data/raw/
 data/official/
 data/external/
 data/tmp/
+data/processed/
+data/sft/
+data/metadata/
+data/rejected/
 examples/tmp/
+external/agentdog_official/datasets/
 reports/*
 !reports/.gitkeep
 dist/
@@ -30,6 +35,7 @@ checkpoints/
 models/
 outputs/
 runs/
+log/
 logs/
 wandb/
 *.pt

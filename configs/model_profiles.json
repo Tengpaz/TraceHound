@@ -1,5 +1,6 @@
 {
   "default_local_profile": "internlm3-8b-instruct",
+  "default_guard_profile": "tracehound-base-qwen3_5-0_8b-binary",
   "default_api_profile": "intern-s2-preview",
   "profiles": {
     "internlm3-8b-instruct": {
@@ -124,6 +125,73 @@
           "w1",
           "w2",
           "w3",
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      }
+    },
+    "qwen3_5-0_8b": {
+      "provider": "huggingface",
+      "family": "qwen",
+      "role": "smoke",
+      "hf_model_id": "Qwen/Qwen3.5-0.8B",
+      "recommended_use": "Single-GPU smoke candidate for fast server validation and small-scale task-specific fine-tuning experiments.",
+      "smoke": true,
+      "formal_lora": false,
+      "trust_remote_code": true,
+      "torch_dtype": "bfloat16",
+      "device_map": "auto",
+      "recommended_max_input_tokens": 2048,
+      "notes": "Qwen3.5-0.8B is a compact Qwen Transformers model suitable for prototyping. It uses model_type=qwen3_5 and requires a Transformers build that recognizes Qwen3_5, validated with transformers==5.12.1 on A800.",
+      "lora": {
+        "r": 8,
+        "alpha": 16,
+        "dropout": 0.05,
+        "target_modules": [
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      }
+    },
+    "tracehound-base-qwen3_5-0_8b-binary": {
+      "provider": "huggingface",
+      "family": "qwen",
+      "role": "binary_guard",
+      "task": "agentdog_lite_binary",
+      "display_name": "TraceHound-Base-Qwen3.5-0.8B-Binary",
+      "base_model": "Qwen/Qwen3.5-0.8B",
+      "local_path": "models/TraceHound-Base-Qwen3.5-0.8B-Binary",
+      "recommended_use": "Default local TraceHound binary guard for UI operation evaluation, runtime hook defense, and safety filtering/reward support before SFT/RL training of downstream target models.",
+      "smoke": false,
+      "formal_lora": false,
+      "trust_remote_code": true,
+      "torch_dtype": "bfloat16",
+      "device_map": "auto",
+      "recommended_max_input_tokens": 4096,
+      "notes": "Full-parameter SFT checkpoint from binary_dedup_lr8e-6 checkpoint-450. The model returns strict JSON {\"judgment\":\"safe|unsafe\"}; TraceHound maps it to RiskReport for guardrail service endpoints.",
+      "output_contract": {
+        "type": "binary_judgment",
+        "field": "judgment",
+        "labels": [
+          "safe",
+          "unsafe"
+        ]
+      },
+      "lora": {
+        "r": 8,
+        "alpha": 16,
+        "dropout": 0.05,
+        "target_modules": [
           "q_proj",
           "k_proj",
           "v_proj",

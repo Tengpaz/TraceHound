@@ -18,9 +18,16 @@ from traceguard.enchantment import build_enchantment_plan, write_enchantment_pla
 from traceguard.evaluation import summarize_predictions
 from traceguard.generation_config import load_generation_config
 from traceguard.guard import TraceGuard
+from traceguard.guardrail_gateway import evaluate_guardrail_event
 from traceguard.judge import build_remote_judge
 from traceguard.llm_generation import llm_synthesize_cases
-from traceguard.model_profiles import list_model_profiles, profile_summary, resolve_model_profile
+from traceguard.model_profiles import (
+    default_guard_profile_name,
+    list_model_profiles,
+    profile_model_id,
+    profile_summary,
+    resolve_model_profile,
+)
 from traceguard.pipeline import evaluate_case
 from traceguard.production import filter_cases_for_training, production_quality_summary
 from traceguard.quality import filter_cases_by_agentdog_qc
@@ -28,13 +35,20 @@ from traceguard.reporting import build_report, write_metric_chart
 from traceguard.schema import RiskReport, TrajectoryCase, TrajectoryStep, dump_model, report_from_gold
 
 TRAIN_PACKAGES = ("torch", "transformers", "datasets", "peft", "accelerate")
+ROOT = Path(__file__).resolve().parent.parent
+TRACEHOUND_BASE_PROFILE = "tracehound-base-qwen3_5-0_8b-binary"
+TRACEHOUND_BASE_MODEL_NAME = "TraceHound-Base-Qwen3.5-0.8B-Binary"
+TRACEHOUND_BASE_MODEL_PATH = ROOT / "models" / TRACEHOUND_BASE_MODEL_NAME
 
 _STATE_LOCK = Lock()
 _JOBS: Dict[str, Dict[str, Any]] = {}
 _ENCHANTED_MODELS: list[Dict[str, Any]] = []
 _MODEL_STATE: Dict[str, Any] = {
     "deployment_mode": "api" if api_runtime_status().get("configured") else "local",
-    "local_model": os.getenv("TRACEHOUND_LOCAL_MODEL", "internlm/internlm3-8b-instruct"),
+    "local_model": os.getenv(
+        "TRACEHOUND_LOCAL_MODEL",
+        str(TRACEHOUND_BASE_MODEL_PATH if TRACEHOUND_BASE_MODEL_PATH.exists() else TRACEHOUND_BASE_MODEL_NAME),
+    ),
     "active_finetuned_model": "",
     "fine_tuned_models": [],
 }
@@ -52,7 +66,7 @@ def create_app():
         ) from exc
 
     _sync_default_model_mode()
-    root = Path(__file__).resolve().parent.parent
+    root = ROOT
     web_dir = root / "web_demo"
     app = FastAPI(title="TraceHound Demo", version="0.1.0")
     app.mount("/static", StaticFiles(directory=web_dir), name="static")
@@ -81,6 +95,8 @@ def create_app():
             "model_profiles": _model_profiles_status(),
             "judges": [
                 {"id": "heuristic", "label": "Heuristic", "remote": False},
+                {"id": "local-binary", "label": "TraceHound-Base Local", "remote": False},
+                {"id": "local", "label": "Local JSON Report", "remote": False},
                 {"id": "hybrid", "label": "Hybrid API", "remote": True},
                 {"id": "api", "label": "API Only", "remote": True},
             ],
@@ -132,6 +148,50 @@ def create_app():
                 "model_calls": report.cost.model_calls,
             },
         }
+
+    @app.post("/api/guardrail/event")
+    async def guardrail_event(request: Request):
+        body: Dict[str, Any] = await request.json()
+        platform = str(body.get("platform") or "auto")
+        event_type = str(body.get("event_type") or "auto")
+        mode = str(body.get("mode") or "layered")
+        judge_name = str(body.get("judge") or "heuristic")
+        raw_event = body.get("event") if isinstance(body.get("event"), dict) else body
+        if platform not in {"auto", "generic", "claude-code", "codex", "openclaw"}:
+            raise HTTPException(status_code=400, detail="platform must be auto, generic, claude-code, codex, or openclaw")
+        if mode not in {"rules", "compressed", "layered"}:
+            raise HTTPException(status_code=400, detail="mode must be rules, compressed, or layered")
+        judge = _build_judge_or_400(judge_name, HTTPException)
+        try:
+            return evaluate_guardrail_event(
+                raw_event,
+                platform=platform,
+                event_type=event_type,
+                mode=mode,
+                judge=judge,
+            )
+        except (TypeError, ValueError, KeyError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/api/guardrail/claude-code")
+    async def guardrail_claude_code(request: Request, mode: str = "layered", judge: str = "heuristic"):
+        body: Dict[str, Any] = await request.json()
+        guard_judge = _build_judge_or_400(judge, HTTPException)
+        try:
+            result = evaluate_guardrail_event(
+                body,
+                platform="claude-code",
+                event_type="auto",
+                mode=mode,
+                judge=guard_judge,
+            )
+        except (TypeError, ValueError, KeyError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return result.get("adapter", {}).get("json") or {}
+
+    @app.get("/api/guardrail/integrations")
+    def guardrail_integrations():
+        return _guardrail_integration_examples()
 
     @app.post("/api/batch-evaluate")
     async def batch_evaluate(request: Request):
@@ -253,7 +313,7 @@ def create_app():
         body: Dict[str, Any] = await request.json()
         model_id = str(body.get("model_id") or "")
         with _STATE_LOCK:
-            known = {item["id"] for item in _MODEL_STATE.get("fine_tuned_models", [])}
+            known = {str(item["id"]) for item in _known_local_guard_models_locked() if item.get("id")}
             if model_id and model_id not in known and model_id != _MODEL_STATE.get("local_model"):
                 raise HTTPException(status_code=404, detail=f"unknown local model: {model_id}")
             _MODEL_STATE["deployment_mode"] = "local"
@@ -486,9 +546,112 @@ def _build_judge_or_400(judge_name: str, http_exception_cls: Any) -> Any:
             return build_remote_judge(judge=judge_name)
         except ValueError as exc:
             raise http_exception_cls(status_code=400, detail=str(exc)) from exc
+    if judge_name in {"local", "local-binary"}:
+        try:
+            config = _local_guard_model_config(binary=judge_name == "local-binary")
+            if judge_name == "local-binary":
+                from traceguard.local_model import build_local_binary_judge
+
+                return build_local_binary_judge(
+                    model_profile=config.get("profile"),
+                    model_path=config.get("path"),
+                    max_new_tokens=32,
+                )
+            from traceguard.local_model import build_local_judge
+
+            return build_local_judge(
+                model_profile=config.get("profile"),
+                model_path=config.get("path"),
+            )
+        except (RuntimeError, ValueError, FileNotFoundError) as exc:
+            raise http_exception_cls(status_code=400, detail=str(exc)) from exc
     if judge_name != "heuristic":
         raise http_exception_cls(status_code=400, detail=f"unknown judge: {judge_name}")
     return None
+
+
+def _local_guard_model_config(*, binary: bool) -> Dict[str, str]:
+    with _STATE_LOCK:
+        selected = str(_MODEL_STATE.get("active_finetuned_model") or _MODEL_STATE.get("local_model") or "")
+        records = _known_local_guard_models_locked()
+    for record in records:
+        if selected and selected in {str(record.get("id") or ""), str(record.get("path") or ""), str(record.get("name") or "")}:
+            return {
+                "profile": str(record.get("profile") or TRACEHOUND_BASE_PROFILE),
+                "path": str(record.get("path") or ""),
+            }
+    if binary:
+        profile_name = default_guard_profile_name() or TRACEHOUND_BASE_PROFILE
+        try:
+            profile = resolve_model_profile(profile_name)
+            profile_path = profile_model_id(profile)
+        except Exception:
+            profile_path = str(TRACEHOUND_BASE_MODEL_PATH)
+        return {
+            "profile": profile_name,
+            "path": _resolve_project_model_path(
+                os.getenv("TRACEHOUND_GUARD_MODEL_PATH")
+                or os.getenv("TRACEHOUND_LOCAL_MODEL_PATH")
+                or (str(TRACEHOUND_BASE_MODEL_PATH) if TRACEHOUND_BASE_MODEL_PATH.exists() else profile_path)
+            ),
+        }
+    return {
+        "profile": os.getenv("TRACEHOUND_MODEL_PROFILE", ""),
+        "path": _resolve_project_model_path(os.getenv("TRACEHOUND_LOCAL_MODEL_PATH") or selected),
+    }
+
+
+def _guardrail_integration_examples() -> Dict[str, Any]:
+    hook_cmd = (
+        "python /absolute/path/to/TraceHound/scripts/guardrail_hook.py "
+        "--platform claude-code --event-type auto --mode layered --judge heuristic "
+        "--server-url http://127.0.0.1:8000 --adapter-json"
+    )
+    local_binary_hook_cmd = hook_cmd.replace("--judge heuristic", "--judge local-binary")
+    return {
+        "server": {
+            "start": "python scripts/serve_demo.py --host 127.0.0.1 --port 8000",
+            "event_endpoint": "POST /api/guardrail/event",
+            "claude_code_http_endpoint": "POST /api/guardrail/claude-code?mode=layered&judge=local-binary",
+            "recommended_online_checkpoint": "pre_reply",
+            "local_binary_judge": "local-binary",
+        },
+        "claude_code": {
+            "command_hook": hook_cmd,
+            "local_binary_command_hook": local_binary_hook_cmd,
+            "settings_json_fragment": {
+                "hooks": {
+                    "PreToolUse": [
+                        {
+                            "matcher": "Bash|Read|Write|Edit|MultiEdit",
+                            "hooks": [{"type": "command", "command": hook_cmd, "timeout": 30}],
+                        }
+                    ],
+                    "PostToolUse": [
+                        {
+                            "matcher": "Bash|Read|Write|Edit|MultiEdit",
+                            "hooks": [
+                                {
+                                    "type": "command",
+                                    "command": hook_cmd.replace("--event-type auto", "--event-type post_tool_use"),
+                                    "timeout": 30,
+                                }
+                            ],
+                        }
+                    ],
+                }
+            },
+        },
+        "codex": {
+            "note": "Use TraceHound as a wrapper around tool dispatch or as a pre-reply audit service when a Codex surface exposes agent events.",
+            "local_command": "python scripts/guardrail_hook.py --platform codex --event-type pre_reply --mode layered < event.json",
+            "http": "POST http://127.0.0.1:8000/api/guardrail/event",
+        },
+        "openclaw": {
+            "note": "Call the endpoint before final delivery and optionally before high-privilege tool execution.",
+            "http": "POST http://127.0.0.1:8000/api/guardrail/event with platform=openclaw",
+        },
+    }
 
 
 def _case_and_gold(raw: Dict[str, Any], index: int) -> tuple[TrajectoryCase, RiskReport | None]:
@@ -689,11 +852,12 @@ def _model_status() -> Dict[str, Any]:
     with _STATE_LOCK:
         mode = _MODEL_STATE["deployment_mode"]
         local_model = _MODEL_STATE["active_finetuned_model"] or _MODEL_STATE["local_model"]
-        fine_tuned = list(_MODEL_STATE.get("fine_tuned_models", []))
+        fine_tuned = _known_local_guard_models_locked()
     try:
         active_profile = profile_summary(resolve_model_profile())
     except Exception:
         active_profile = {}
+    local_path = _local_path_for_model(local_model, fine_tuned)
     current_model = api.get("model") if mode == "api" and api.get("configured") else local_model
     return {
         "deployment_mode": mode,
@@ -703,13 +867,80 @@ def _model_status() -> Dict[str, Any]:
         "api": api,
         "local": {
             "model": local_model,
-            "path": os.getenv("TRACEHOUND_LOCAL_MODEL_PATH", ""),
+            "path": local_path,
+            "guard_profile": default_guard_profile_name() or TRACEHOUND_BASE_PROFILE,
             "gpu_available": _cuda_available(),
             "training_packages_available": _missing_training_packages() == [],
         },
         "fine_tuned_models": fine_tuned,
         "scenarios": list(TOOL_SCENARIOS),
     }
+
+
+def _known_local_guard_models_locked() -> list[Dict[str, Any]]:
+    records = []
+    base = _tracehound_base_model_record()
+    if base:
+        records.append(base)
+    seen = {str(item.get("id") or "") for item in records}
+    for item in _MODEL_STATE.get("fine_tuned_models", []):
+        model_id = str(item.get("id") or "")
+        if model_id and model_id in seen:
+            continue
+        if model_id:
+            seen.add(model_id)
+        records.append(dict(item))
+    return records
+
+
+def _tracehound_base_model_record() -> Dict[str, Any] | None:
+    profile_name = default_guard_profile_name() or TRACEHOUND_BASE_PROFILE
+    try:
+        profile = resolve_model_profile(profile_name)
+        profile_path = profile_model_id(profile)
+    except Exception:
+        profile_path = str(TRACEHOUND_BASE_MODEL_PATH)
+    model_path = _resolve_project_model_path(
+        os.getenv("TRACEHOUND_GUARD_MODEL_PATH") or os.getenv("TRACEHOUND_LOCAL_MODEL_PATH") or profile_path
+    )
+    if model_path and Path(model_path).exists():
+        available = True
+    else:
+        available = TRACEHOUND_BASE_MODEL_PATH.exists()
+        if available:
+            model_path = str(TRACEHOUND_BASE_MODEL_PATH)
+    return {
+        "id": TRACEHOUND_BASE_PROFILE,
+        "name": TRACEHOUND_BASE_MODEL_NAME,
+        "kind": "full_sft_binary_guard",
+        "algorithm": "full_parameter_sft",
+        "profile": profile_name,
+        "path": model_path,
+        "available": available,
+        "source_checkpoint": "binary_dedup_lr8e-6 checkpoint-450",
+        "output_contract": {"judgment": ["safe", "unsafe"]},
+    }
+
+
+def _local_path_for_model(local_model: str, records: list[Dict[str, Any]]) -> str:
+    for record in records:
+        if local_model in {str(record.get("id") or ""), str(record.get("name") or ""), str(record.get("path") or "")}:
+            return str(record.get("path") or "")
+    return os.getenv("TRACEHOUND_LOCAL_MODEL_PATH", "")
+
+
+def _resolve_project_model_path(value: str) -> str:
+    if not value:
+        return ""
+    path = Path(value)
+    if path.is_absolute():
+        return str(path)
+    project_path = ROOT / path
+    if project_path.exists():
+        return str(project_path)
+    if path.exists():
+        return str(path.resolve())
+    return value
 
 
 def _model_profiles_status() -> list[Dict[str, Any]]:

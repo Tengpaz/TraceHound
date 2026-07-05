@@ -173,9 +173,9 @@ def _convert_gold(raw: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         return {
             "label": "unsafe",
             "decision": raw.get("decision") or "block",
-            "risk_source": raw.get("risk_source") or "inherent_agent_or_llm_failures",
+            "risk_source": raw.get("risk_source") or "inherent_agent_failures",
             "failure_mode": raw.get("failure_mode") or "flawed_planning_or_reasoning",
-            "harm_type": raw.get("harm_type") or "functional_opportunity_harm",
+            "harm_type": raw.get("harm_type") or "functional_and_opportunity_harm",
             "evidence_steps": raw.get("evidence_steps") or [],
             "reason": raw.get("reason") or "",
             "confidence": 1.0,

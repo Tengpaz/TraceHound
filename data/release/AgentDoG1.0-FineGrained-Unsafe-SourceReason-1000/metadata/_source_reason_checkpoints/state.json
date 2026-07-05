@@ -1,0 +1,10 @@
+{
+  "accepted": 1000,
+  "backend": "api",
+  "concurrency": 6,
+  "fallback_concurrency": 6,
+  "phase": "source_reason_annotation",
+  "rejected": 0,
+  "total": 1000,
+  "updated_at": "2026-07-04T17:52:37.050345+00:00"
+}

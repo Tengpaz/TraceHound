@@ -12,7 +12,9 @@ The current MVP focuses on:
 - Config-driven 10K-scale synthetic data generation for contest-day retuning.
 - API judge token-cost estimates via optional per-1M token pricing env vars.
 - InternLM/Intern-S2 model profiles, tokenizer `chat_template` prompt rendering, and optional local HF adapter.
+- TraceHound-Base local binary guard support for the full-parameter Qwen3.5-0.8B SFT checkpoint under `models/TraceHound-Base-Qwen3.5-0.8B-Binary`.
 - A FastAPI demo with native HTML/CSS/JS, JSON/JSONL upload, batch evaluation, report downloads, Guard Model ops, and safety enchantment for target models.
+- Runtime online guardrail endpoints and hook examples for Claude Code, Codex-style wrappers, OpenClaw-style middleware, and generic agent systems.
 
 Training scripts are placeholders by design. They validate inputs and explain optional dependencies, but they do not require GPU packages in the default environment.
 
@@ -55,6 +57,15 @@ List prepared local/API model candidates:
 ```bash
 python scripts/list_model_profiles.py
 ```
+
+Use the local TraceHound-Base binary checkpoint as a guard model:
+
+```bash
+python scripts/evaluate.py data/synthetic_eval.jsonl --judge local-binary --mode layered
+python scripts/serve_demo.py --host 127.0.0.1 --port 8000
+```
+
+Then send guardrail requests with `"judge": "local-binary"` or choose `TraceHound-Base local` in the Web Demo. The checkpoint is loaded lazily on first local-binary inference.
 
 ## Remote GPU Server
 
@@ -124,10 +135,55 @@ Prepare official assets:
 
 ```bash
 python -m pip install -e ".[official]"
-python scripts/prepare_agentdog_official.py --clone-repo --download-dataset atbench --download-dataset app1_sft
+python scripts/prepare_agentdog_official.py \
+  --clone-repo \
+  --download-dataset agentdog10_training \
+  --download-dataset atbench \
+  --download-dataset atbench_claw \
+  --download-dataset atbench_codex \
+  --download-dataset app1_sft
 ```
 
 See `docs/agentdog_official_reproduction.md` for the official asset manifest and reproduction workflow.
+
+Build official AgentDoG1.0 SFT bundles:
+
+```bash
+python scripts/build_agentdog_data.py --source agentdog10 --download-official --limit 20 --no-annotate-cot
+```
+
+Build the AgentDoG-Lite binary training dataset for the 2026 summer-camp response contract:
+
+```bash
+python scripts/build_agentdog_lite_binary.py \
+  --out data/release/AgentDoG-Lite-TrainningDataset-Binary
+```
+
+This uses only `AI45Research/AgentDoG1.0-Training-Data/AgentDoG-BinarySafety/train.json` as training source, rewrites the target from bare `safe`/`unsafe` into the AgentDoG-Lite strict JSON judgment format, rewrites the taxonomy labels inside the prompt to the summer-camp snake_case contract, and inspects `AI45Research/2026_summer_camp_teseset` only for schema and label alignment. The summer-camp ATBench300/R-Judge evaluation samples are not copied into training outputs.
+
+Evaluate the local TraceHound-Base binary checkpoint on the held-out summer-camp files:
+
+```bash
+python scripts/evaluate_lite_binary_model.py --datasets atbench,rjudge
+```
+
+Add AgentDoG-style CoT targets with the API judge/generator, or use the stub backend for a formatting smoke test:
+
+```bash
+python scripts/build_agentdog_data.py --source agentdog10 --limit 2 --annotate-cot --cot-backend stub
+python scripts/build_agentdog_data.py --source agentdog10 --limit 100 --annotate-cot --cot-backend api --cot-concurrency 2
+```
+
+Official data-flow outputs are separated from synthetic outputs:
+
+- `data/sft/official_agentdog10/binary_safety/{all,train,eval,test}.jsonl`
+- `data/sft/official_agentdog10/taxonomy_only/{all,train,eval,test}.jsonl`
+- `data/sft/official_agentdog10/unified_four_label/{all,train,eval,test}.jsonl`
+- `data/sft/official_agentdog10/{coarse,finegrained,unified}_cot/{all,train,eval,test}.jsonl` when CoT annotation is enabled
+- `data/sft/official_app1/safety_response_sft/{all,train,eval,test}.jsonl`
+- `data/processed/official_atbench/eval_only/all.jsonl`
+
+ATBench remains held-out by default. TraceHound only creates ATBench-derived CoT distillation artifacts when `allow_atbench_cot_distill` is explicitly enabled, and the manifest records the contamination warning.
 
 For a paper-described approximation of the unreleased LLM synthesis engine, use the LLM backend with LLM self-repair:
 
@@ -233,6 +289,14 @@ AgentDoG training exports are split by objective:
 The taxonomy-only and unified files use the AgentDoG-style `{"id": "...", "task": "...", "messages": [...]}` shape and embed the full 8/14/10 categorization block in the user prompt. `agentdog15_unified_sft.jsonl` is kept separately as the official AgentDoG 1.5 prompt-compatible export.
 `synthetic_sft.jsonl` and `train/tracehound_risk_report_sft/*` now also embed the full AgentDoG 8/14/10 categorization block, but ask the model to return TraceHound's strict JSON `RiskReport` schema with machine-label fields. Preference and RL exports use deterministic hard negatives: unsafe samples keep the unsafe label while corrupting taxonomy or evidence, and safe samples receive plausible false-positive unsafe reports, instead of using a single fixed flipped-label template.
 
+Official AgentDoG1.0 training exports are built separately with:
+
+```bash
+python scripts/build_agentdog_data.py --config configs/agentdog_data_flows.yaml --source agentdog10
+```
+
+This keeps official SFT base data, TraceHound synthetic data, APP1 safety-response data, and ATBench held-out evaluation data in distinct directories.
+
 Run quality checks:
 
 ```bash
@@ -265,6 +329,62 @@ python scripts/serve_demo.py --host 127.0.0.1 --port 8000
 ```
 
 Then open `http://127.0.0.1:8000`.
+
+## Online Guardrail Integration
+
+TraceHound can run as a runtime guardrail service, not just a demo simulator:
+
+```bash
+python scripts/serve_demo.py --host 127.0.0.1 --port 8000
+```
+
+Agent runtimes can then call:
+
+```text
+POST http://127.0.0.1:8000/api/guardrail/event
+```
+
+Claude Code can also call the native hook endpoint directly:
+
+```text
+POST http://127.0.0.1:8000/api/guardrail/claude-code?mode=layered&judge=heuristic
+```
+
+The same logic is available offline:
+
+```bash
+python scripts/guardrail_hook.py --platform generic --event-type pre_reply < event.json
+```
+
+Claude Code command hooks can use:
+
+```bash
+python scripts/guardrail_hook.py \
+  --platform claude-code \
+  --event-type auto \
+  --server-url http://127.0.0.1:8000 \
+  --adapter-json
+```
+
+To install those hooks into Claude Code without overwriting existing settings:
+
+```bash
+python scripts/install_claude_code_hooks.py \
+  --settings .claude/settings.json \
+  --tracehound-root /Users/a1234/Documents/Code/TraceHound \
+  --server-url http://127.0.0.1:8000 \
+  --python-command "conda run -n tracehound python"
+```
+
+The installer preserves existing settings, creates a timestamped backup, and
+refreshes only TraceHound-managed hook entries.
+
+Integration examples:
+
+- `integrations/claude_code/settings.tracehound.example.json`
+- `examples/integrations/codex_guardrail_wrapper.py`
+- `examples/integrations/openclaw_guardrail_middleware.py`
+- `docs/online_guardrail_integrations.md`
 
 ## No-training API Validation
 

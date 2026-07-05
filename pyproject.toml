@@ -21,7 +21,7 @@ train = [
   "peft>=0.12",
   "protobuf>=4.25",
   "sentencepiece>=0.2",
-  "transformers>=4.48,<5",
+  "transformers>=4.48",
 ]
 preference = [
   "datasets>=2.20",
@@ -44,8 +44,15 @@ tracehound-experiments = "scripts.run_experiments:main"
 tracehound-report = "scripts.generate_report:main"
 tracehound-convert = "scripts.convert_dataset:main"
 tracehound-agentdog-official = "scripts.prepare_agentdog_official:main"
+tracehound-build-agentdog-data = "scripts.build_agentdog_data:main"
+tracehound-build-agentdog-lite-binary = "scripts.build_agentdog_lite_binary:main"
+tracehound-build-agentdog-finegrained-source-reason = "scripts.build_agentdog_finegrained_source_reason:main"
+tracehound-train-lite-binary-lora = "scripts.train_lite_binary_lora:main"
+tracehound-evaluate-lite-binary-model = "scripts.evaluate_lite_binary_model:main"
 tracehound-model-profiles = "scripts.list_model_profiles:main"
 tracehound-enchant-safety = "scripts.enchant_safety:main"
+tracehound-guardrail-hook = "scripts.guardrail_hook:main"
+tracehound-install-claude-hooks = "scripts.install_claude_code_hooks:main"
 
 [tool.setuptools]
 packages = ["traceguard", "scripts"]

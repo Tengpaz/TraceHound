@@ -20,7 +20,13 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from traceguard.agentdog_official import OFFICIAL_DATASETS, OFFICIAL_REPO_URL, official_manifest, write_manifest
+from traceguard.agentdog_official import (
+    OFFICIAL_DATASETS,
+    OFFICIAL_REPO_URL,
+    download_official_dataset,
+    official_manifest,
+    write_manifest,
+)
 
 
 def main() -> None:
@@ -74,21 +80,10 @@ def _prepare_repo(repo_dir: Path, *, force: bool) -> dict[str, Any]:
 
 
 def _download_dataset(key: str, output_dir: Path, *, force: bool) -> dict[str, Any]:
-    dataset_id = OFFICIAL_DATASETS[key]
-    if output_dir.exists() and force:
-        shutil.rmtree(output_dir)
-    if output_dir.exists() and any(output_dir.iterdir()):
-        return {"kind": "dataset", "key": key, "dataset_id": dataset_id, "status": "present", "path": str(output_dir)}
     try:
-        from huggingface_hub import snapshot_download
-    except ImportError as exc:
-        raise SystemExit(
-            "huggingface_hub is required for official dataset download. "
-            "Install it with `python -m pip install huggingface_hub` or download datasets manually."
-        ) from exc
-    output_dir.mkdir(parents=True, exist_ok=True)
-    snapshot_download(repo_id=dataset_id, repo_type="dataset", local_dir=str(output_dir))
-    return {"kind": "dataset", "key": key, "dataset_id": dataset_id, "status": "downloaded", "path": str(output_dir)}
+        return download_official_dataset(key, output_dir, force=force)
+    except RuntimeError as exc:
+        raise SystemExit(str(exc)) from exc
 
 
 if __name__ == "__main__":

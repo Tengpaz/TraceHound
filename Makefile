@@ -3,7 +3,7 @@ HOST ?= 0.0.0.0
 PORT ?= 8000
 DATA ?= data/synthetic_eval.jsonl
 
-.PHONY: setup setup-gpu doctor smoke generate quality test eval experiments report demo docker-build-gpu docker-up-gpu docker-down-gpu
+.PHONY: setup setup-gpu doctor smoke generate official-data quality test eval experiments report demo docker-build-gpu docker-up-gpu docker-down-gpu
 
 setup:
 	$(PYTHON) -m pip install -e ".[dev]"
@@ -19,6 +19,9 @@ smoke:
 
 generate:
 	$(PYTHON) scripts/generate_data.py --config configs/generation.yaml
+
+official-data:
+	$(PYTHON) scripts/build_agentdog_data.py --config configs/agentdog_data_flows.yaml --source agentdog10
 
 quality:
 	$(PYTHON) scripts/quality_check.py $(DATA)

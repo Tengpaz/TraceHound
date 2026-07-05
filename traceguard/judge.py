@@ -46,9 +46,9 @@ class HeuristicJudge(ModelAdapter):
             return RiskReport(
                 label="unsafe",
                 decision="block",
-                risk_source="inherent_agent_or_llm_failures",
+                risk_source="inherent_agent_failures",
                 failure_mode="unconfirmed_or_over_privileged_action",
-                harm_type="functional_opportunity_harm",
+                harm_type="functional_and_opportunity_harm",
                 evidence_steps=compressed.evidence_candidates,
                 reason="Compressed trajectory contains high-risk actions and sensitive evidence candidates.",
                 confidence=0.72,
