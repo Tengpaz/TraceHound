@@ -17,6 +17,7 @@ TraceHound 是面向 Agent 轨迹安全评估与防御的项目。项目围绕 A
 | 导入 SFT 项目 | `external/agentdog_sft_project/` | 六标签 SFT、GRPO、ATBench/R-Judge 评测脚本 |
 | 导入安全仓库 | `external/agentdog_safety_repo/` | 二分类 SFT、taxonomy LoRA、应用 guardrail 检查脚本 |
 | 导入 6-label checkpoint | `checkpoints/imported/qwen35-0.8b-6label/` | Qwen3.5-0.8B 六标签全参数 SFT checkpoint，本地保留不进 Git |
+| Hugging Face checkpoints | `https://huggingface.co/Tengpaz` | 关键实验 checkpoint 已上传到 Hugging Face，链接见下文 |
 
 导入资产的来源、校验值和结果清单见 `docs/imported_agentdog_assets.md`。
 
@@ -396,6 +397,33 @@ SHA-256：
 
 ```text
 1e6beee966eddb65f10c1ade560481d3fbe3978d8a70f03dbddd071166c6f0d6
+```
+
+## Hugging Face Checkpoints
+
+关键实验 checkpoint 已上传到 Hugging Face，便于在新机器上直接下载复现实验。`models/Qwen3.5-0.8B/` 是基座模型本地缓存，不作为 TraceHound 实验 checkpoint 重复上传；实验模型均基于 `Qwen/Qwen3.5-0.8B`。
+
+| Checkpoint | Hugging Face | 本地对应路径 | 说明 |
+|---|---|---|---|
+| TraceHound 二分类 full-SFT | [Tengpaz/TraceHound-Base-Qwen3.5-0.8B-Binary](https://huggingface.co/Tengpaz/TraceHound-Base-Qwen3.5-0.8B-Binary) | `models/TraceHound-Base-Qwen3.5-0.8B-Binary/` | 二分类 guard 主模型，ATBench Accuracy 0.7303 / F1 0.7791 |
+| AgentDoG 六标签 full-SFT | [Tengpaz/AgentDoG-Qwen3.5-0.8B-6Label](https://huggingface.co/Tengpaz/AgentDoG-Qwen3.5-0.8B-6Label) | `checkpoints/imported/qwen35-0.8b-6label/` | 六标签 + Reason SFT checkpoint |
+| TraceHound unified full-SFT | [Tengpaz/TraceHound-Qwen3.5-0.8B-Unified-Full-SFT](https://huggingface.co/Tengpaz/TraceHound-Qwen3.5-0.8B-Unified-Full-SFT) | `checkpoints/qwen3_5_0_8b_full_sft_unified_notrunc_20260705_000140/` | 保留 final、checkpoint-200、checkpoint-225、optimizer/scheduler/RNG/trainer state |
+| TraceHound Lite Binary LoRA | [Tengpaz/TraceHound-Qwen3.5-0.8B-Lite-Binary-LoRA](https://huggingface.co/Tengpaz/TraceHound-Qwen3.5-0.8B-Lite-Binary-LoRA) | `checkpoints/qwen3_5_0_8b_lite_binary_preserve_target_150039/` | LoRA 对比实验 checkpoint，包含 checkpoint-150 |
+
+下载示例：
+
+```bash
+huggingface-cli download Tengpaz/TraceHound-Base-Qwen3.5-0.8B-Binary \
+  --local-dir models/TraceHound-Base-Qwen3.5-0.8B-Binary
+
+huggingface-cli download Tengpaz/AgentDoG-Qwen3.5-0.8B-6Label \
+  --local-dir checkpoints/imported/qwen35-0.8b-6label
+
+huggingface-cli download Tengpaz/TraceHound-Qwen3.5-0.8B-Unified-Full-SFT \
+  --local-dir checkpoints/qwen3_5_0_8b_full_sft_unified_notrunc_20260705_000140
+
+huggingface-cli download Tengpaz/TraceHound-Qwen3.5-0.8B-Lite-Binary-LoRA \
+  --local-dir checkpoints/qwen3_5_0_8b_lite_binary_preserve_target_150039
 ```
 
 ## 远程 GPU 服务器
